@@ -1,4 +1,4 @@
-import { aiConfig } from "./_shared";
+import { aiConfig } from "./_shared.js";
 import {
   authorized,
   action,
@@ -7,8 +7,8 @@ import {
   errorMessage,
   type Request,
   type Response,
-} from "./_shared";
-import { buildSystemPrompt, validateQuestions } from "../src/lib/core";
+} from "./_shared.js";
+import { buildSystemPrompt, validateQuestions } from "../src/lib/core.js";
 export const config = { maxDuration: 60 };
 export default async function handler(req: Request, res: Response) {
   res.setHeader("Cache-Control", "no-store");

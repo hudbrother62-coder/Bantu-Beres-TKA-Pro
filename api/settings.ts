@@ -6,7 +6,7 @@ import {
   errorMessage,
   type Request,
   type Response,
-} from "./_shared";
+} from "./_shared.js";
 export default async function handler(req: Request, res: Response) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
