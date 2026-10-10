@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {PGlite} from '@electric-sql/pglite';
+test('database enforces ownership, hidden keys, server scoring, and submission idempotence',async()=>{
+ const pg=new PGlite();await pg.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
+ await pg.exec(readFileSync(new URL('../supabase/schema.sql',import.meta.url),'utf8'));
+ const teacher='11111111-1111-4111-8111-111111111111',student='22222222-2222-4222-8222-222222222222',other='33333333-3333-4333-8333-333333333333';
+ for(const [id,role] of [[teacher,'teacher'],[student,'student'],[other,'teacher']])await pg.query('insert into auth.users values($1,$2)',[id,JSON.stringify({name:role,role})]);
+ const as=async(id:string)=>{await pg.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);};
+ const act=async(name:string,payload:unknown={})=>(await pg.query<{value:any}>('select public.tka_action($1,$2) value',[name,JSON.stringify(payload)])).rows[0].value;
+ await as(teacher);const c=await act('create_class',{name:'XII-1',subject:'Matematika'});
+ const sample={subject:'Matematika',topic:'Bilangan',level:'L1',question:'Berapa hasil 2 + 2?',options:['3','4','5','6'],answer:1,explanation:'Dua ditambah dua sama dengan empat.'};
+ await act('save_question',sample);const q=(await act('questions'))[0];
+ await assert.rejects(act('create_package',{title:'Draft',duration:10,class_id:c.id,question_ids:[q.id]}));
+ await act('question_status',{id:q.id,status:'ready'});await act('create_package',{title:'Tryout',duration:10,class_id:c.id,question_ids:[q.id]});const p=(await act('packages'))[0];await act('publish_package',{id:p.id,published:true,release_results:false});
+ await as(other);await assert.rejects(act('question_status',{id:q.id,status:'ready'}));await assert.rejects(act('package_detail',{id:p.id}));assert.deepEqual(await act('packages'),[]);
+ await as(student);await act('join_class',{code:c.invite_code});await act('join_class',{code:c.invite_code});assert.equal((await act('classes'))[0].member_count,1);assert.deepEqual(await act('questions'),[]);
+ assert.equal((await act('packages'))[0].keys,undefined);await assert.rejects(act('save_question',sample));
+ const a=await act('start_attempt',{id:p.id});await act('save_attempt',{id:a.id,answers:{[q.id]:1}});const submitted=await act('submit_attempt',{id:a.id,answers:{[q.id]:1}});assert.equal(submitted.score,undefined);
+ const hidden=(await act('results'))[0];assert.equal(hidden.score,undefined);assert.deepEqual(hidden.keys,{});
+ const restarted=await act('start_attempt',{id:p.id});assert.equal(restarted.score,undefined,'completed attempt must not leak unreleased score');
+ await as(teacher);assert.equal((await act('results'))[0].score,100);await act('publish_package',{id:p.id,published:true,release_results:true});await as(student);assert.equal((await act('results'))[0].score,100);
+ await act('submit_attempt',{id:a.id,answers:{[q.id]:0}});assert.equal((await act('results'))[0].score,100);
+ await pg.close();
+});
