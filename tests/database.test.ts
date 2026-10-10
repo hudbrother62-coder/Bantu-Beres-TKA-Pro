@@ -8,6 +8,7 @@ test('database enforces ownership, hidden keys, server scoring, and submission i
  const teacher='11111111-1111-4111-8111-111111111111',student='22222222-2222-4222-8222-222222222222',other='33333333-3333-4333-8333-333333333333';
  for(const [id,role] of [[teacher,'teacher'],[student,'student'],[other,'teacher']])await pg.query('insert into auth.users values($1,$2)',[id,JSON.stringify({name:role,role})]);
  const as=async(id:string)=>{await pg.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);};
+ await pg.exec('grant usage on schema auth to authenticated;set role authenticated;');
  const act=async(name:string,payload:unknown={})=>(await pg.query<{value:any}>('select public.tka_action($1,$2) value',[name,JSON.stringify(payload)])).rows[0].value;
  await as(teacher);const c=await act('create_class',{name:'XII-1',subject:'Matematika'});
  const sample={subject:'Matematika',topic:'Bilangan',level:'L1',question:'Berapa hasil 2 + 2?',options:['3','4','5','6'],answer:1,explanation:'Dua ditambah dua sama dengan empat.'};
@@ -22,5 +23,8 @@ test('database enforces ownership, hidden keys, server scoring, and submission i
  const restarted=await act('start_attempt',{id:p.id});assert.equal(restarted.score,undefined,'completed attempt must not leak unreleased score');
  await as(teacher);assert.equal((await act('results'))[0].score,100);await act('publish_package',{id:p.id,published:true,release_results:true});await as(student);assert.equal((await act('results'))[0].score,100);
  await act('submit_attempt',{id:a.id,answers:{[q.id]:0}});assert.equal((await act('results'))[0].score,100);
+ await assert.rejects(act('ai_config',{}),'credentials must not be accessible to browser');
+ await as(teacher);await act('create_package',{title:'Scheduled',subject:'Matematika',duration:10,class_id:c.id,question_ids:[q.id],starts_at:new Date(Date.now()+3600000).toISOString()});const future=(await act('packages')).find((x:any)=>x.title==='Scheduled');await act('publish_package',{id:future.id,published:true});await as(student);assert.deepEqual((await act('packages')).find((x:any)=>x.id===future.id).questions,[]);await assert.rejects(act('start_attempt',{id:future.id}));
+ await as(teacher);await act('create_package',{title:'Expired',duration:10,class_id:c.id,question_ids:[q.id]});const expiry=(await act('packages')).find((x:any)=>x.title==='Expired');await act('publish_package',{id:expiry.id,published:true});await as(student);const ea=await act('start_attempt',{id:expiry.id});await act('save_attempt',{id:ea.id,answers:{[q.id]:1}});await pg.exec('reset role;');await pg.query("update tka_private.attempts set started_at=now()-interval '1 hour' where id=$1",[ea.id]);await pg.exec('set role authenticated;');assert.ok((await act('results')).find((x:any)=>x.id===ea.id).submitted_at);
  await pg.close();
 });
