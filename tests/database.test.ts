@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 test('database enforces ownership, hidden keys, server scoring, and submission idempotence',async()=>{
- const pg=new PGlite();await pg.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
+ const pg=new PGlite();await pg.exec(`create role service_role;create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
  await pg.exec(readFileSync(new URL('../supabase/schema.sql',import.meta.url),'utf8'));
  const teacher='11111111-1111-4111-8111-111111111111',student='22222222-2222-4222-8222-222222222222',other='33333333-3333-4333-8333-333333333333';
  for(const [id,role] of [[teacher,'teacher'],[student,'student'],[other,'teacher']])await pg.query('insert into auth.users values($1,$2)',[id,JSON.stringify({name:role,role})]);

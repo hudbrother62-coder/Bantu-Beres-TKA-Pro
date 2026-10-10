@@ -1,3 +1,4 @@
+import { aiConfig } from "./_shared";
 import {
   authorized,
   action,
@@ -33,7 +34,7 @@ export default async function handler(req: Request, res: Response) {
       JSON.stringify(req.body).length > 180000
     )
       throw new Error("Permintaan terlalu panjang atau tidak valid.");
-    const cfg = await action(db, "ai_config", {
+    const cfg = await aiConfig(db, {
       class_id: req.body.classId || null,
     });
     const apiKey = decrypt(cfg.encrypted_key);

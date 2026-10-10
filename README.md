@@ -30,3 +30,5 @@ Launch limitations: no Android APK, dual-role switching, essay/complex-question 
 
 ## Verification
 Unit tests cover generation validation and blueprints. Embedded PostgreSQL tests cover real schema execution, ownership, hidden keys, teacher/student roles and server scoring. These do not substitute for Supabase Auth and Gemini live smoke tests with a connected database and a real user key.
+
+`SUPABASE_SERVICE_ROLE_KEY` wajib disimpan sebagai variabel server Vercel (tanpa awalan VITE); dipakai setelah verifikasi sesi untuk mengambil konfigurasi AI privat.

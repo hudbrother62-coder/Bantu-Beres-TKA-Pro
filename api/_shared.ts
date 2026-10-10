@@ -97,3 +97,13 @@ export async function gemini(key: string, model: string, body: unknown) {
     throw new Error("AI tidak menghasilkan jawaban. Coba ubah permintaan.");
   return text as string;
 }
+
+export async function aiConfig(db: Awaited<ReturnType<typeof authorized>>,payload: Record<string,unknown>) {
+ const {data:user,error:authError}=await db.auth.getUser();
+ if(authError||!user.user) throw new Error('Sesi berakhir.');
+ const secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
+ if(!secret) throw new Error('Konfigurasi server AI belum tersedia.');
+ const admin=createClient(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL!,secret,{auth:{persistSession:false}});
+ const {data,error}=await admin.rpc('tka_ai_config',{actor:user.user.id,payload});
+ if(error) throw new Error(error.message);return data;
+}

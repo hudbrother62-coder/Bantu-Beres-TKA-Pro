@@ -152,6 +152,7 @@ begin
   insert into tka_private.ai_settings values(actor,payload->>'encrypted_key',left(payload->>'model',100),left(coalesce(payload->>'direction',''),1000)) on conflict(owner_id) do update set encrypted_key=excluded.encrypted_key,model=excluded.model,direction=excluded.direction;return jsonb_build_object('ok',true);
  elsif action='delete_ai' then delete from tka_private.ai_settings where owner_id=actor;return jsonb_build_object('ok',true);
  elsif action='ai_config' then
+  if coalesce(current_setting('request.jwt.claims',true),'{}')::jsonb->>'role' is distinct from 'service_role' then raise exception 'Konfigurasi hanya tersedia untuk server.';end if;
   key_owner:=actor;
   cid:=nullif(payload->>'class_id','')::uuid;
   if cid is not null then
@@ -173,3 +174,7 @@ grant execute on function tka_private.action(text,jsonb) to authenticated;
 create function public.tka_action(action text,payload jsonb default '{}') returns jsonb language sql security invoker set search_path='' as $$ select tka_private.action(action,payload); $$;
 revoke all on function public.tka_action(text,jsonb) from public,anon;
 grant execute on function public.tka_action(text,jsonb) to authenticated;
+
+create function public.tka_ai_config(actor uuid,payload jsonb default '{}') returns jsonb language plpgsql security definer set search_path='' as $$ begin perform set_config('request.jwt.claim.sub',actor::text,true);return tka_private.action('ai_config',payload);end $$;
+revoke all on function public.tka_ai_config(uuid,jsonb) from public,anon,authenticated;
+grant execute on function public.tka_ai_config(uuid,jsonb) to service_role;
