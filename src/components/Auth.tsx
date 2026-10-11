@@ -10,6 +10,7 @@ import {
 import { db, configured } from "../lib/db";
 import { Field } from "./ui";
 import { SubjectPicker } from "./SubjectPicker";
+import { createUsernameAccount, normalizeUsername, usernameEmail } from "../lib/username";
 export default function Auth({
   initial,
   onBack,
@@ -36,32 +37,30 @@ export default function Auth({
     const f = new FormData(e.currentTarget);
     setBusy(true);
     try {
-      const email = String(f.get("email")).trim(),
+      const username = normalizeUsername(String(f.get("username") || "")),
         password = String(f.get("password"));
       if (mode === "signup") {
         if (password !== f.get("confirm"))
           throw new Error("Konfirmasi kata sandi belum cocok.");
-        const { data, error } = await db.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: location.origin,
-            data: {
-              name: f.get("name"),
-              role,
-              grade: f.get("grade"),
-              school: f.get("school"),
-              subject: f.get("subject"),
-            },
-          },
+        await createUsernameAccount({
+          username, password,
+          name: String(f.get("name") || ""),
+          role,
+          grade: String(f.get("grade") || ""),
+          subject: String(f.get("subject") || ""),
+          school: String(f.get("school") || ""),
         });
-        if (error) throw error;
-        if (!data.session)
-          setMessage(
-            "Akun dibuat. Periksa email untuk mengaktifkan akun, kemudian masuk.",
-          );
+        const { error } = await db.auth.signInWithPassword({
+          email: usernameEmail(username), password,
+        });
+        if (error) {
+          setMode("login");
+          setMessage("Akun dibuat. Silakan masuk menggunakan username dan kata sandi.");
+        }
       } else {
-        const { error } = await db.auth.signInWithPassword({ email, password });
+        const { error } = await db.auth.signInWithPassword({
+          email: usernameEmail(username), password,
+        });
         if (error) throw error;
       }
     } catch (e) {
@@ -161,13 +160,17 @@ export default function Auth({
               </Field>
             </>
           )}
-          <Field label="Email">
+          <Field label="Username">
             <input
-              name="email"
-              type="email"
+              name="username"
+              type="text"
               required
-              autoComplete="email"
-              placeholder="nama@email.com"
+              autoComplete="username"
+              minLength={3}
+              maxLength={32}
+              pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,31}"
+              placeholder="Contoh: gurutka01"
+              title="3–32 karakter; huruf, angka, titik, garis bawah, atau tanda hubung"
             />
           </Field>
           <Field label="Kata sandi">
@@ -213,26 +216,7 @@ export default function Auth({
             <ArrowRight size={18} />
           </button>
         </form>
-        {mode === "login" && (
-          <button
-            className="link"
-            onClick={async () => {
-              const email = prompt("Email akun yang akan dipulihkan:");
-              if (email && db) {
-                const { error } = await db.auth.resetPasswordForEmail(email, {
-                  redirectTo: location.origin + "/?reset=1",
-                });
-                error
-                  ? setError(error.message)
-                  : setMessage(
-                      "Jika akun tersedia, tautan pemulihan dikirim ke email.",
-                    );
-              }
-            }}
-          >
-            Lupa kata sandi?
-          </button>
-        )}
+        <p className="muted center">Tidak perlu email atau verifikasi. Simpan username dan kata sandi Anda dengan aman.</p>
       </section>
       <p className="muted center">
         Bahan latihan internal, bukan soal atau nilai resmi TKA.
