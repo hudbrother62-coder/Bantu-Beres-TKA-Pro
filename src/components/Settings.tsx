@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { api, rpc, type Profile } from "../lib/db";
 import { Field, ErrorBox, useWork, useNotice } from "./ui";
+import { SubjectPicker } from "./SubjectPicker";
 export function SettingsPage({
   profile,
   onProfile,
@@ -75,12 +76,7 @@ export function SettingsPage({
               <input name="grade" required defaultValue={profile.grade} />
             </Field>
             <Field label="Mata pelajaran">
-              <input
-                name="subject"
-                list="subjects"
-                required
-                defaultValue={profile.subject}
-              />
+              <SubjectPicker name="subject" defaultValue={profile.subject} />
             </Field>
             <Field label="Sekolah / lembaga">
               <input name="school" defaultValue={profile.school} />

@@ -12,6 +12,7 @@ import {
 import { rpc, type Profile, type ClassRow } from "../lib/db";
 import { validateQuestions, type Question } from "../lib/core";
 import { exportTable, readExcel, exportDocument } from "../lib/export";
+import { SubjectPicker } from "./SubjectPicker";
 import {
   Field,
   Modal,
@@ -486,12 +487,7 @@ export function Bank({ profile }: { profile: Profile }) {
           >
             <div className="form-grid">
               <Field label="Mata pelajaran">
-                <input
-                  name="subject"
-                  list="subjects"
-                  required
-                  defaultValue={editing.subject}
-                />
+                <SubjectPicker name="subject" defaultValue={editing.subject || profile.subject} />
               </Field>
               <Field label="Topik">
                 <input name="topic" required defaultValue={editing.topic} />

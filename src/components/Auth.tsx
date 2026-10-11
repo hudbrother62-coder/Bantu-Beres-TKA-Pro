@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { db, configured } from "../lib/db";
 import { Field } from "./ui";
+import { SubjectPicker } from "./SubjectPicker";
 export default function Auth({
   initial,
   onBack,
@@ -152,12 +153,7 @@ export default function Auth({
                   />
                 </Field>
                 <Field label="Mata pelajaran">
-                  <input
-                    name="subject"
-                    defaultValue="Matematika"
-                    required
-                    list="subjects"
-                  />
+                  <SubjectPicker name="subject" defaultValue="Matematika" />
                 </Field>
               </div>
               <Field label="Sekolah / lembaga (opsional)">

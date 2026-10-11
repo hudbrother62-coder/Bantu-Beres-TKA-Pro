@@ -30,6 +30,7 @@ import {
   useNotice,
 } from "./ui";
 import { exportTable, exportDocument } from "../lib/export";
+import { SubjectPicker } from "./SubjectPicker";
 export function Classes({ profile }: { profile: Profile }) {
   const classes = useData<ClassRow & { member_count: number }>("classes"),
     [open, setOpen] = useState(false),
@@ -208,12 +209,7 @@ export function Classes({ profile }: { profile: Profile }) {
                   <input name="name" required placeholder="Contoh: XII-1" />
                 </Field>
                 <Field label="Mata pelajaran">
-                  <input
-                    name="subject"
-                    required
-                    list="subjects"
-                    defaultValue={profile.subject}
-                  />
+                  <SubjectPicker name="subject" defaultValue={profile.subject} />
                 </Field>
               </>
             ) : (
@@ -265,6 +261,7 @@ export function Packages({ profile }: { profile: Profile }) {
     classes = useData<ClassRow>("classes"),
     bank = useData<Question>("questions");
   const [open, setOpen] = useState(false),
+    [packageSubject, setPackageSubject] = useState(profile.subject),
     [exam, setExam] = useState<{ pkg: PackageRow; attempt: Attempt } | null>(
       null,
     ),
@@ -484,12 +481,7 @@ export function Packages({ profile }: { profile: Profile }) {
               />
             </Field>
             <Field label="Mata pelajaran">
-              <input
-                name="subject"
-                required
-                list="subjects"
-                defaultValue={profile.subject}
-              />
+              <SubjectPicker name="subject" value={packageSubject} onChange={setPackageSubject} />
             </Field>
             <Field label="Kelas penerima">
               <select name="class_id" required>
@@ -526,7 +518,7 @@ export function Packages({ profile }: { profile: Profile }) {
             <div className="form-grid three">
               {(["L1", "L2", "L3"] as const).map((l, i) => (
                 <Field
-                  label={`${l} (stok ${bank.data.filter((q) => q.status === "ready" && q.level === l).length})`}
+                  label={`${l} (stok ${bank.data.filter((q) => q.status === "ready" && q.level === l && q.subject === packageSubject).length})`}
                   key={l}
                 >
                   <input
