@@ -103,7 +103,7 @@ test("generated content cannot contain repeated or shallow questions", async () 
 
 test("username identifiers are normalized consistently without a contact email", async () => {
   const { normalizeUsername, usernameEmail } = await import("../src/lib/username.ts");
-  assert.equal(normalizeUsername("  GuruSMA01  "), "gursma01");
+  assert.equal(normalizeUsername("  GuruSMA01  "), "gurusma01");
   assert.equal(usernameEmail(" Siswa.01 "), "siswa.01@users.tka-pro.invalid");
   assert.throws(() => usernameEmail("bad email"));
   assert.throws(() => usernameEmail("ab"));
