@@ -202,6 +202,7 @@ export function Bank({ profile }: { profile: Profile }) {
   const bank = useData<Question>("questions");
   const [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all"),
+    [subjectFilter, setSubjectFilter] = useState("all"),
     [editing, setEditing] = useState<Partial<Question> | null>(null),
     [imported, setImported] = useState<Question[]>([]);
   const { busy, run } = useWork(),
@@ -209,6 +210,7 @@ export function Bank({ profile }: { profile: Profile }) {
   const filtered = bank.data.filter(
     (q) =>
       (filter === "all" || q.status === filter) &&
+      (subjectFilter === "all" || q.subject === subjectFilter) &&
       (q.question + " " + q.topic + " " + q.subject)
         .toLowerCase()
         .includes(search.toLowerCase()),
@@ -301,6 +303,13 @@ export function Bank({ profile }: { profile: Profile }) {
             placeholder="Cari pertanyaan, topik, atau mapel…"
           />
         </label>
+        <select aria-label="Filter mata pelajaran" value={subjectFilter}
+          onChange={e => setSubjectFilter(e.target.value)}>
+          <option value="all">Semua mata pelajaran</option>
+          {Array.from(new Set(bank.data.map(q => q.subject).filter(Boolean))).sort((a,b) => a.localeCompare(b, "id")).map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
         <select
           aria-label="Filter status"
           value={filter}

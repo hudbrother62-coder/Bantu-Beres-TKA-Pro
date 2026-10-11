@@ -664,7 +664,7 @@ function Exam({
         action: "submit_attempt",
         payload: { id: initial.id, answers: answerRef.current },
       });
-      localStorage.removeItem(storageKey);
+      try { localStorage.removeItem(storageKey); } catch { /* private mode can block local storage */ }
       setDone(true);
       notice("Jawaban berhasil dikumpulkan.");
     });
@@ -675,7 +675,11 @@ function Exam({
   }, []);
   useEffect(() => {
     if (done) return;
-    localStorage.setItem(storageKey, JSON.stringify(answers));
+    let savedLocally = false;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(answers));
+      savedLocally = true;
+    } catch { /* save to server is still attempted */ }
     setStatus("Menyimpan…");
     const id = setTimeout(() => {
       void rpc("tka_action", {
@@ -684,7 +688,9 @@ function Exam({
       })
         .then(() => setStatus("Tersimpan di server"))
         .catch(() =>
-          setStatus("Belum tersinkron. Salinan tersimpan di perangkat."),
+          setStatus(savedLocally
+            ? "Belum tersinkron. Salinan tersimpan di perangkat."
+            : "Gagal menyimpan. Periksa koneksi sebelum menutup halaman."),
         );
     }, 500);
     return () => clearTimeout(id);
