@@ -3,10 +3,26 @@ const url = import.meta.env.VITE_SUPABASE_URL,
   key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const configured = Boolean(url && key);
 export const db = configured ? createClient(url, key) : null;
+export async function withTimeout<T>(request: PromiseLike<T>, ms = 20000): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve(request),
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("Server terlalu lama merespons. Periksa internet dan coba lagi.")),
+          ms,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 export async function checked<T>(
   request: PromiseLike<{ data: T; error: { message: string } | null }>,
 ): Promise<T> {
-  const { data, error } = await request;
+  const { data, error } = await withTimeout(request);
   if (error) throw new Error(error.message);
   return data;
 }
@@ -19,7 +35,7 @@ export async function rpc<T = unknown>(
 }
 export async function api(path: string, body: unknown) {
   if (!db) throw new Error("Database belum terhubung.");
-  const { data } = await db.auth.getSession();
+  const { data } = await withTimeout(db.auth.getSession(), 15000);
   const r = await fetch("/api/" + path, {
     method: "POST",
     headers: {
@@ -27,8 +43,11 @@ export async function api(path: string, body: unknown) {
       Authorization: `Bearer ${data.session?.access_token || ""}`,
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(65000),
   });
-  const result = await r.json();
+  const result = await r.json().catch(() => {
+    throw new Error("Respons server tidak valid. Coba lagi sesaat.");
+  });
   if (!r.ok) throw new Error(result.error || "Layanan belum tersedia.");
   return result;
 }

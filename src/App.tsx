@@ -49,9 +49,9 @@ export default function App() {
     [profileError, setProfileError] = useState(""),
     [auth, setAuth] = useState<"login" | "signup" | null>(null),
     [page, setPage] = useState<Page>("home"),
-    [dark, setDark] = useState(
-      () => localStorage.getItem("tka-theme") === "dark",
-    ),
+    [dark, setDark] = useState(() => {
+      try { return localStorage.getItem("tka-theme") === "dark"; } catch { return false; }
+    }),
     [toast, setToast] = useState<{ text: string; error: boolean } | null>(null),
     [mobileMenu, setMobileMenu] = useState(false),
     [reset, setReset] = useState(location.search.includes("reset=1"));
@@ -65,20 +65,37 @@ export default function App() {
   }, [toast]);
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
-    localStorage.setItem("tka-theme", dark ? "dark" : "light");
+    try { localStorage.setItem("tka-theme", dark ? "dark" : "light"); } catch { /* browser storage may be unavailable */ }
   }, [dark]);
   useEffect(() => {
     if (!db) return;
-    db.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    let active = true;
+    const watchdog = window.setTimeout(() => {
+      if (!active) return;
       setInitializing(false);
-    });
-    const { data } = db.auth.onAuthStateChange((event, s) => {
-      setSession(s);
+      setProfileError("Koneksi sesi terlalu lama. Periksa internet dan coba lagi.");
+    }, 12000);
+    db.auth.getSession()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) setProfileError(error.message);
+        else setSession(data.session);
+      })
+      .catch((error: unknown) => {
+        if (active) setProfileError(error instanceof Error ? error.message : "Sesi gagal dimuat.");
+      })
+      .finally(() => { if (active) setInitializing(false); });
+    const { data } = db.auth.onAuthStateChange((event, nextSession) => {
+      if (!active) return;
+      setSession(nextSession);
       setInitializing(false);
       if (event === "PASSWORD_RECOVERY") setReset(true);
     });
-    return () => data.subscription.unsubscribe();
+    return () => {
+      active = false;
+      window.clearTimeout(watchdog);
+      data.subscription.unsubscribe();
+    };
   }, []);
   async function loadProfile() {
     if (!session) return;
@@ -122,7 +139,7 @@ export default function App() {
     setPage(id);
     setMobileMenu(false);
   }
-  if (initializing) return <Busy />;
+  if (initializing) return <div className="startup-state"><Busy /><p className="muted">Memulihkan sesi dan koneksi TKA Pro…</p></div>;
   return (
     <NoticeContext.Provider value={notice}>
       <datalist id="subjects">

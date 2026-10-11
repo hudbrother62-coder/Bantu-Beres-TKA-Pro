@@ -1986,3 +1986,12 @@ summary {
     display: none;
   }
 }
+
+/* Consistent subject selection, loading, and recoverable runtime errors */
+.subject-picker { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.subject-picker select,.subject-picker input { width:100%; min-width:0; }
+.startup-state { min-height:70dvh; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
+.recovery-page { min-height:100dvh; display:grid; place-items:center; padding:24px; background:var(--bg); color:var(--text); }
+.recovery-card { width:min(100%,440px); padding:32px; border:1px solid var(--line); background:var(--surface); border-radius:16px; text-align:center; }
+.recovery-card img { object-fit:contain; margin-bottom:20px; }
+.recovery-card .primary { margin:16px auto; }
