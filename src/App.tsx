@@ -103,7 +103,17 @@ export default function App() {
       setProfile(await rpc<Profile>("tka_action", { action: "profile" }));
       setProfileError("");
     } catch (e) {
-      setProfileError(e instanceof Error ? e.message : "Profil gagal dimuat.");
+      const message = e instanceof Error ? e.message : "Profil gagal dimuat.";
+      // Accounts from before the username migration were intentionally reset.
+      // Clear only invalidated sessions; keep retry available on network failures.
+      if (/Profil belum tersedia|User from sub claim.*not exist|invalid jwt/i.test(message)) {
+        await db?.auth.signOut({ scope: "local" });
+        setSession(null);
+        setAuth("signup");
+        setProfileError("");
+        return;
+      }
+      setProfileError(message);
     }
   }
   useEffect(() => {
