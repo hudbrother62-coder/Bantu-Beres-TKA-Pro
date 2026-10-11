@@ -306,7 +306,7 @@ export function Bank({ profile }: { profile: Profile }) {
         <select aria-label="Filter mata pelajaran" value={subjectFilter}
           onChange={e => setSubjectFilter(e.target.value)}>
           <option value="all">Semua mata pelajaran</option>
-          {Array.from(new Set(bank.data.map(q => q.subject).filter(Boolean))).sort((a,b) => a.localeCompare(b, "id")).map(s => (
+          {Array.from(new Set(bank.data.map(q => q.subject).filter((s): s is string => Boolean(s)))).sort((a,b) => a.localeCompare(b, "id")).map(s => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
