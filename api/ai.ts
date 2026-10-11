@@ -8,7 +8,7 @@ import {
   type Request,
   type Response,
 } from "./_shared.js";
-import { buildSystemPrompt, validateQuestions } from "../src/lib/core.js";
+import { buildSystemPrompt, validateGeneratedQuestions } from "../src/lib/core.js";
 export const config = { maxDuration: 60 };
 export default async function handler(req: Request, res: Response) {
   res.setHeader("Cache-Control", "no-store");
@@ -37,13 +37,24 @@ export default async function handler(req: Request, res: Response) {
     const cfg = await aiConfig(db, {
       class_id: req.body.classId || null,
     });
+    const requestedSubject = typeof req.body.subject === "string" ? req.body.subject.trim() : "";
+    if (requestedSubject.length > 100) throw new Error("Nama mata pelajaran terlalu panjang.");
+    const questionCount = Number(req.body.questionCount ?? 5);
+    if (mode === "questions" && (!Number.isInteger(questionCount) || questionCount < 1 || questionCount > 20))
+      throw new Error("Jumlah generate soal harus 1–20 per proses.");
+    const difficulty = String(req.body.difficulty ?? "mixed");
+    if (!["mixed", "L1", "L2", "L3"].includes(difficulty)) throw new Error("Tingkat kesulitan tidak valid.");
+    const topic = typeof req.body.topic === "string" ? req.body.topic.trim().slice(0, 150) : "";
     const apiKey = decrypt(cfg.encrypted_key);
     const instruction = buildSystemPrompt({
       role: cfg.role,
       grade: cfg.grade,
-      subject: cfg.subject,
+      subject: requestedSubject || cfg.subject,
       direction: cfg.direction,
       mode,
+      questionCount,
+      topic,
+      difficulty: difficulty as "mixed" | "L1" | "L2" | "L3",
     });
     const attachment = req.body.attachment as
       | { data: string; mimeType: string }
@@ -97,11 +108,12 @@ export default async function handler(req: Request, res: Response) {
           "Format keluaran AI belum valid. Kurangi jumlah soal dan coba kembali.",
         );
       }
-      const questions = validateQuestions(parsed.questions);
+      const questions = validateGeneratedQuestions(parsed.questions);
+      if (questions.length > questionCount) throw new Error("AI membuat terlalu banyak soal. Coba kurangi jumlahnya.");
       res
         .status(200)
         .json({
-          text: `${questions.length} draf soal berhasil dibuat. Telaah kunci dan pembahasan sebelum dipakai.`,
+          text: `${questions.length} dari ${questionCount} draf soal ${requestedSubject || cfg.subject} dibuat. ${questions.length === questionCount ? "" : "Jumlah belum sesuai target; coba ulang dengan topik lebih spesifik. "}Telaah akurasi kunci dan pembahasannya sebelum dipakai.`,
           questions,
         });
     } else res.status(200).json({ text });

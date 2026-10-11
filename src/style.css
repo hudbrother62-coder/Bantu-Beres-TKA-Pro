@@ -1995,3 +1995,15 @@ summary {
 .recovery-card { width:min(100%,440px); padding:32px; border:1px solid var(--line); background:var(--surface); border-radius:16px; text-align:center; }
 .recovery-card img { object-fit:contain; margin-bottom:20px; }
 .recovery-card .primary { margin:16px auto; }
+
+/* AI generator controls */
+.chat-controls { flex-wrap:wrap; }
+.chat-controls > .field { min-width:145px; }
+.generator-controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; padding:0 20px; border-bottom:1px solid var(--line); background:var(--soft); }
+.generator-controls .field { margin:9px 0; font-size:12px; }
+@media(max-width:680px) {
+  .chat-controls { gap:4px 10px; }
+  .chat-controls > .field { flex:1 1 45%; min-width:130px; margin:8px 0; }
+  .generator-controls { padding:0 13px; gap:2px 8px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .generator-controls .field:first-child { grid-column:1/-1; }
+}

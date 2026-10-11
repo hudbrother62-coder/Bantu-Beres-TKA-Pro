@@ -75,3 +75,28 @@ test("student instruction separates study from exam and treats source as data", 
   assert.match(p, /dokumen.*data/i);
   assert.match(p, /ujian/i);
 });
+
+
+test("question prompt respects per-request subject, count, and depth", () => {
+  const prompt = buildSystemPrompt({
+    role: "teacher", grade: "XII SMA", subject: "Bahasa Inggris Tingkat Lanjut",
+    direction: "Tulis alami", mode: "questions", questionCount: 6,
+    difficulty: "L3", topic: "reading inference",
+  });
+  assert.match(prompt, /Bahasa Inggris Tingkat Lanjut/);
+  assert.match(prompt, /TEPAT 6 soal/);
+  assert.match(prompt, /level L3/);
+  assert.match(prompt, /reading inference/);
+});
+test("generated content cannot contain repeated or shallow questions", async () => {
+  const { validateGeneratedQuestions } = await import("../src/lib/core.ts");
+  const sample = {
+    question: "Seorang siswa menganalisis data penjualan. Pernyataan manakah yang tepat?",
+    options: ["A adalah benar", "B adalah benar", "C adalah benar", "D adalah benar"],
+    answer: 2, topic: "Statistika", level: "L2",
+    explanation: "Analisis data memperlihatkan opsi C konsisten terhadap semua perubahan pada grafik dan nilai.",
+  };
+  assert.equal(validateGeneratedQuestions([sample]).length, 1);
+  assert.throws(() => validateGeneratedQuestions([sample, sample]));
+  assert.throws(() => validateGeneratedQuestions([{ ...sample, explanation: "Benar." }]));
+});

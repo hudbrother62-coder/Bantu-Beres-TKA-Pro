@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { api, rpc, type Profile, type ClassRow } from "../lib/db";
 import type { Question } from "../lib/core";
+import { SubjectPicker } from "./SubjectPicker";
 import {
   Rich,
   Field,
@@ -29,6 +30,10 @@ export function Assistant({ profile }: { profile: Profile }) {
     [chatId, setChatId] = useState<string | null>(null),
     [text, setText] = useState(""),
     [mode, setMode] = useState("chat"),
+    [subject, setSubject] = useState(profile.subject),
+    [topic, setTopic] = useState(""),
+    [questionCount, setQuestionCount] = useState(5),
+    [difficulty, setDifficulty] = useState("mixed"),
     [classId, setClassId] = useState(""),
     [source, setSource] = useState(""),
     [attachment, setAttachment] = useState<{
@@ -65,6 +70,10 @@ export function Assistant({ profile }: { profile: Profile }) {
         const result = await api("ai", {
           messages: next.slice(-16),
           mode,
+          subject,
+          topic,
+          questionCount,
+          difficulty,
           classId: classId || null,
           attachment: attachment
             ? { data: attachment.data, mimeType: attachment.mimeType }
@@ -76,14 +85,19 @@ export function Assistant({ profile }: { profile: Profile }) {
         ];
         setMessages(updated);
         setQuestions(result.questions || []);
-        const saved = await rpc<Chat>("tka_action", {
-          action: "save_chat",
-          payload: { id: chatId, title: value.slice(0, 80), messages: updated },
-        });
-        setChatId(saved.id);
         setAttachment(null);
-        await chats.refresh();
+        try {
+          const saved = await rpc<Chat>("tka_action", {
+            action: "save_chat",
+            payload: { id: chatId, title: value.slice(0, 80), messages: updated },
+          });
+          setChatId(saved.id);
+          await chats.refresh();
+        } catch {
+          notice("Jawaban tersedia, tetapi riwayat belum tersimpan. Salin hasil penting.", true);
+        }
       } catch (e) {
+        setMessages(messages);
         setText(value);
         throw e;
       }
@@ -120,14 +134,14 @@ export function Assistant({ profile }: { profile: Profile }) {
   }
   const suggestions = teacher
     ? [
-        "Buat bahan ajar aljabar dengan contoh dan latihan.",
-        "Buat 5 soal penalaran beserta kunci dan pembahasan.",
-        "Bantu telaah apakah soal ini bermakna ganda.",
+        `Rancang bahan ajar ${subject} dengan contoh kontekstual dan latihan.`,
+        `Buat soal ${subject} dengan pembahasan rinci.`,
+        "Tinjau kualitas pertanyaan: apakah ada kunci ganda atau stem ambigu?",
       ]
     : [
-        "Jelaskan persamaan kuadrat dengan contoh sederhana.",
-        "Beri petunjuk bertahap untuk soal yang akan aku kirim.",
-        "Buat 5 soal latihan untuk menguji pemahamanku.",
+        `Jelaskan konsep dasar ${subject} dengan contoh sehari-hari.`,
+        "Bantu aku memahami cara menyelesaikan soal langkah demi langkah.",
+        `Buat latihan mandiri ${subject} dan berikan pembahasannya.`,
       ];
   return (
     <div className="assistant-layout">
@@ -186,6 +200,9 @@ export function Assistant({ profile }: { profile: Profile }) {
       </aside>
       <section className="chat-main">
         <div className="chat-controls">
+          <Field label="Mata pelajaran aktif">
+            <SubjectPicker value={subject} onChange={setSubject} />
+          </Field>
           <Field label="Jenis bantuan">
             <select value={mode} onChange={(e) => setMode(e.target.value)}>
               <option value="chat">Percakapan</option>
@@ -211,6 +228,28 @@ export function Assistant({ profile }: { profile: Profile }) {
             </select>
           </Field>
         </div>
+        {(mode === "questions" || mode === "material") && (
+          <div className="generator-controls">
+            <Field label="Topik (opsional)">
+              <input value={topic} onChange={e => setTopic(e.target.value)} maxLength={150}
+                placeholder="Contoh: teks argumentasi, statistika..." />
+            </Field>
+            {mode === "questions" && <>
+              <Field label="Jumlah soal">
+                <input type="number" value={questionCount} min={1} max={20}
+                  onChange={e => setQuestionCount(Number(e.target.value))} />
+              </Field>
+              <Field label="Level kognitif">
+                <select value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+                  <option value="mixed">Campuran L1–L3</option>
+                  <option value="L1">L1 · Pemahaman</option>
+                  <option value="L2">L2 · Aplikasi</option>
+                  <option value="L3">L3 · Penalaran</option>
+                </select>
+              </Field>
+            </>}
+          </div>
+        )}
         <div className="chat-scroll">
           {!messages.length ? (
             <div className="chat-intro">
@@ -301,7 +340,7 @@ export function Assistant({ profile }: { profile: Profile }) {
                           payload: {
                             questions: questions.map((q) => ({
                               ...q,
-                              subject: profile.subject,
+                              subject,
                             })),
                           },
                         });
@@ -418,8 +457,8 @@ export function Assistant({ profile }: { profile: Profile }) {
             </button>
           </form>
           <small className="composer-note">
-            Hasil AI perlu diperiksa. Materi yang dikirim diproses oleh layanan
-            AI pilihan Anda.
+            Fokus: {subject || "pilih mata pelajaran"} · {profile.grade}.
+            {mode === "questions" ? ` Target ${questionCount} soal; kunci dan pembahasan harus ditelaah guru.` : " Materi diproses oleh layanan AI yang dipilih."}
           </small>
         </div>
       </section>
