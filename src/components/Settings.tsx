@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { api, rpc, type Profile } from "../lib/db";
 import { Field, ErrorBox, useWork, useNotice } from "./ui";
-import { SubjectPicker } from "./SubjectPicker";
+import { SubjectPicker, TeacherSubjects } from "./SubjectPicker";
+import { normalizeSubjectList, profileSubjects } from "../lib/subjects";
 export function SettingsPage({
   profile,
   onProfile,
@@ -54,12 +55,21 @@ export function SettingsPage({
               e.preventDefault();
               const f = new FormData(e.currentTarget);
               void run(async () => {
-                const p = await rpc<Profile>("tka_action", {
+                const items = profile.role === "teacher"
+                  ? normalizeSubjectList(JSON.parse(String(f.get("subjects") || "[]")))
+                  : [];
+                if (profile.role === "teacher" && !items.length)
+                  throw new Error("Minimal satu mata pelajaran harus dipilih.");
+                await rpc<Profile>("tka_action", {
                   action: "profile",
                   payload: Object.fromEntries(f),
                 });
-                onProfile(p);
-                notice("Profil diperbarui.");
+                if (profile.role === "teacher") {
+                  await rpc("tka_subjects", { subject_items: items });
+                }
+                const updated = await rpc<Profile>("tka_action", { action: "profile" });
+                onProfile(updated);
+                notice("Profil dan mata pelajaran berhasil diperbarui.");
               });
             }}
           >
@@ -75,9 +85,16 @@ export function SettingsPage({
             <Field label="Jenjang / kelas">
               <input name="grade" required defaultValue={profile.grade} />
             </Field>
-            <Field label="Mata pelajaran">
-              <SubjectPicker name="subject" defaultValue={profile.subject} />
-            </Field>
+            {profile.role === "teacher" ? (
+              <Field label="Daftar mata pelajaran yang diampu">
+                <TeacherSubjects key={profile.subjects?.join("|") || profile.subject}
+                  defaultValue={profileSubjects(profile)} />
+              </Field>
+            ) : (
+              <Field label="Mata pelajaran fokus belajar">
+                <SubjectPicker name="subject" defaultValue={profile.subject} />
+              </Field>
+            )}
             <Field label="Sekolah / lembaga">
               <input name="school" defaultValue={profile.school} />
             </Field>
@@ -86,8 +103,9 @@ export function SettingsPage({
             </button>
           </form>
           <p className="muted">
-            Peran ditetapkan saat pendaftaran. Hak kelas mengikuti undangan,
-            bukan nama sekolah yang diketik.
+            {profile.role === "teacher"
+              ? "Anda dapat menambah, mengganti, dan menghapus mapel umum atau kejuruan tanpa membuat akun lain. Mapel pertama adalah mapel utama."
+              : "Jenjang dan fokus belajar dapat diperbarui. Hak akses kelas mengikuti undangan guru."}
           </p>
         </section>
         <section className="panel">

@@ -33,6 +33,7 @@ import { Assistant } from "./components/Assistant";
 import { Bank, Materials } from "./components/Content";
 import { Classes, Packages, Results } from "./components/Classroom";
 import { SettingsPage, Guide } from "./components/Settings";
+import { profileSubjects } from "./lib/subjects";
 type Page =
   | "home"
   | "ai"
@@ -121,30 +122,23 @@ export default function App() {
     void loadProfile();
   }, [session?.user.id]);
   const teacher = profile?.role === "teacher";
-  const nav: { id: Page; label: string; icon: typeof BookOpen }[] = [
-    { id: "home", label: "Beranda", icon: LayoutDashboard },
-    {
-      id: "ai",
-      label: teacher ? "Asisten AI" : "Belajar AI",
-      icon: MessageSquare,
-    },
-    {
-      id: "content",
-      label: teacher ? "Materi & Soal" : "Materi",
-      icon: Library,
-    },
-    {
-      id: "packages",
-      label: teacher ? "Paket Tryout" : "Latihan",
-      icon: ClipboardList,
-    },
-    { id: "classes", label: teacher ? "Kelas" : "Kelasku", icon: Users },
-    {
-      id: "results",
-      label: teacher ? "Hasil & Laporan" : "Progres",
-      icon: BarChart3,
-    },
-  ];
+  const nav: { id: Page; label: string; icon: typeof BookOpen }[] = teacher
+    ? [
+        { id: "home", label: "Beranda Guru", icon: LayoutDashboard },
+        { id: "ai", label: "Generator & Asisten AI", icon: MessageSquare },
+        { id: "content", label: "Materi & Bank Soal", icon: Library },
+        { id: "classes", label: "Kelola Kelas", icon: Users },
+        { id: "packages", label: "Susun Tryout", icon: ClipboardList },
+        { id: "results", label: "Hasil & Laporan", icon: BarChart3 },
+      ]
+    : [
+        { id: "home", label: "Beranda Siswa", icon: LayoutDashboard },
+        { id: "packages", label: "Tryout & Latihan", icon: ClipboardList },
+        { id: "ai", label: "Tutor Belajar AI", icon: MessageSquare },
+        { id: "results", label: "Progres Pribadi", icon: BarChart3 },
+        { id: "classes", label: "Kelasku", icon: Users },
+        { id: "content", label: "Materi Belajar", icon: Library },
+      ];
   function navigate(id: Page) {
     setPage(id);
     setMobileMenu(false);
@@ -152,22 +146,6 @@ export default function App() {
   if (initializing) return <div className="startup-state"><Busy /><p className="muted">Memulihkan sesi dan koneksi TKA Pro…</p></div>;
   return (
     <NoticeContext.Provider value={notice}>
-      <datalist id="subjects">
-        {[
-          "Matematika",
-          "Bahasa Indonesia",
-          "Bahasa Inggris",
-          "Fisika",
-          "Kimia",
-          "Biologi",
-          "Ekonomi",
-          "Sejarah",
-          "Sosiologi",
-          "Geografi",
-        ].map((s) => (
-          <option key={s}>{s}</option>
-        ))}
-      </datalist>
       {session && reset ? (
         <div className="auth-page">
           <section className="auth-card">
@@ -283,7 +261,9 @@ export default function App() {
                 </b>
               </div>
               <div className="top-actions">
-                <span className="subject-pill">{profile.subject}</span>
+                <span className="subject-pill" title={teacher ? "Kelola daftar mata pelajaran di Pengaturan" : "Mata pelajaran fokus belajar"}>
+                  {teacher ? `${profileSubjects(profile).length} mata pelajaran` : profile.subject}
+                </span>
                 <button
                   className="icon"
                   aria-label="Ganti mode warna"
@@ -326,7 +306,9 @@ export default function App() {
           <nav className="bottom-nav">
             {nav
               .filter((n) =>
-                ["home", "ai", "packages", "classes", "results"].includes(n.id),
+                (teacher
+                  ? ["home", "ai", "content", "packages", "classes"]
+                  : ["home", "packages", "ai", "results", "classes"]).includes(n.id),
               )
               .map((n) => (
                 <button
@@ -337,8 +319,10 @@ export default function App() {
                   <n.icon size={21} />
                   <span>
                     {n.id === "packages"
-                      ? "Latihan"
-                      : n.id === "results"
+                      ? (teacher ? "Tryout" : "Latihan")
+                      : n.id === "content"
+                        ? "Bank Soal"
+                        : n.id === "results"
                         ? "Hasil"
                         : n.id === "ai"
                           ? "AI"
@@ -414,6 +398,7 @@ function Dashboard({
     pkg = useData<PackageRow>("packages"),
     results = useData<Attempt>("results");
   const teacher = profile.role === "teacher";
+  const subjects = profileSubjects(profile);
   const finished = results.data.filter((a) => a.submitted_at),
     scored = finished.filter((a) => a.score !== null && a.score !== undefined);
   const avg = scored.length
@@ -434,36 +419,32 @@ function Dashboard({
               ? "Siapkan pembelajaran, lihat hasilnya, dan bantu setiap siswa berkembang."
               : "Lanjutkan belajarmu. Mulai dari satu konsep, satu latihan, satu kemajuan."}
           </p>
-          <button className="primary" onClick={() => navigate("ai")}>
-            {teacher ? "Mulai dengan Asisten AI" : "Mulai belajar"}
-            <ArrowRight size={18} />
-          </button>
+          <div className="dashboard-hero-actions">
+            <button className="primary" onClick={() => navigate(teacher ? "ai" : cls.data.length ? "packages" : "classes")}>
+              {teacher ? "Buat materi & soal" : cls.data.length ? "Kerjakan tryout" : "Gabung kelas"}
+              <ArrowRight size={18} />
+            </button>
+            {teacher && <button onClick={() => navigate("settings")}>Kelola mata pelajaran</button>}
+          </div>
         </div>
         <div className="welcome-mark">
           <GraduationCap size={72} />
           <span>{profile.grade}</span>
-          <small>{profile.subject}</small>
+          <small>{teacher ? `${subjects.length} mapel yang diampu` : profile.subject}</small>
         </div>
       </section>
       <div className="stats-grid">
-        {[
-          {
-            label: teacher ? "Kelas dikelola" : "Kelas diikuti",
-            value: cls.data.length,
-            icon: Users,
-          },
-          {
-            label: "Paket latihan",
-            value: pkg.data.length,
-            icon: ClipboardList,
-          },
-          {
-            label: teacher ? "Pengumpulan jawaban" : "Latihan selesai",
-            value: finished.length,
-            icon: Check,
-          },
+        {(teacher ? [
+          { label: "Kelas dikelola", value: cls.data.length, icon: Users },
+          { label: "Paket diterbitkan", value: pkg.data.filter(p => p.published).length, icon: ClipboardList },
+          { label: "Jawaban terkumpul", value: finished.length, icon: Check },
+          { label: "Rata-rata hasil siswa", value: avg ?? "—", icon: BarChart3 },
+        ] : [
+          { label: "Kelas diikuti", value: cls.data.length, icon: Users },
+          { label: "Latihan tersedia", value: pkg.data.length, icon: ClipboardList },
+          { label: "Latihan selesai", value: finished.length, icon: Check },
           { label: "Rata-rata nilai", value: avg ?? "—", icon: BarChart3 },
-        ].map((s) => (
+        ]).map(s => (
           <div className="stat" key={s.label}>
             <s.icon size={20} />
             <strong>{s.value}</strong>
@@ -471,47 +452,41 @@ function Dashboard({
           </div>
         ))}
       </div>
-      <div className="section-heading">
-        <h2>
-          {teacher
-            ? "Apa yang ingin Anda kerjakan?"
-            : "Pilih langkah berikutnya"}
-        </h2>
+      {teacher && (
+        <section className="panel dashboard-subjects">
+          <div className="section-heading">
+            <div>
+              <h2>Mata pelajaran yang Anda ampu</h2>
+              <p className="muted">Mapel umum dan kejuruan dapat dikelola dalam satu akun.</p>
+            </div>
+            <button className="link" onClick={() => navigate("settings")}>Tambah / edit mapel</button>
+          </div>
+          <div className="dashboard-subject-tags">
+            {subjects.map(s => <span key={s}>{s}</span>)}
+          </div>
+        </section>
+      )}
+      <div className="section-heading dashboard-priority-title">
+        <div>
+          <h2>{teacher ? "Ruang kerja utama guru" : "Mulai dari kebutuhan belajarmu"}</h2>
+          <p className="muted">{teacher
+            ? "Siapkan soal dan materi, kelola kelas, lalu terbitkan tryout untuk siswa."
+            : "Ikuti kelas, pahami konsep, selesaikan latihan, lalu tinjau perkembanganmu."}</p>
+        </div>
       </div>
-      <div className="action-grid">
-        {[
-          {
-            title: teacher ? "Siapkan bahan ajar" : "Pahami materi",
-            text: teacher
-              ? "Draf materi, contoh, dan aktivitas pembelajaran."
-              : "Penjelasan sederhana, contoh, dan petunjuk bertahap.",
-            page: "ai" as Page,
-            icon: BookOpen,
-          },
-          {
-            title: teacher ? "Susun latihan & tryout" : "Kerjakan latihan",
-            text: teacher
-              ? "Paket dari soal yang sudah Anda telaah."
-              : "Tugas kelas dan latihan untuk menguji pemahaman.",
-            page: "packages" as Page,
-            icon: ClipboardList,
-          },
-          {
-            title: teacher
-              ? "Lihat perkembangan kelas"
-              : "Lihat perkembanganmu",
-            text: teacher
-              ? "Temukan topik lemah dan tentukan tindak lanjut."
-              : "Kenali kekuatan dan materi yang perlu dilatih.",
-            page: "results" as Page,
-            icon: BarChart3,
-          },
-        ].map((a) => (
-          <button
-            className="action-card"
-            key={a.title}
-            onClick={() => navigate(a.page)}
-          >
+      <div className="action-grid role-action-grid">
+        {(teacher ? [
+          { title: "Generator soal & materi", text: "Buat draf berdasarkan mapel, kelas, topik, dan level kognitif.", page: "ai" as Page, icon: MessageSquare },
+          { title: "Bank soal & bahan ajar", text: "Telaah, edit, impor Excel, dan siapkan soal untuk tryout.", page: "content" as Page, icon: Library },
+          { title: "Kelola kelas", text: "Buat kelas, undang siswa, dan kendalikan akses AI kelas.", page: "classes" as Page, icon: Users },
+          { title: "Susun paket tryout", text: "Pilih soal tervalidasi, atur durasi, kemudian terbitkan.", page: "packages" as Page, icon: ClipboardList },
+        ] : [
+          { title: "Kerjakan tryout", text: "Lihat latihan dari guru, jawab soal dan kirim hasil.", page: "packages" as Page, icon: ClipboardList },
+          { title: "Belajar bersama AI", text: "Pelajari konsep dengan contoh dan petunjuk bertahap.", page: "ai" as Page, icon: MessageSquare },
+          { title: "Gabung kelas", text: "Gunakan kode undangan untuk menerima latihan dari guru.", page: "classes" as Page, icon: Users },
+          { title: "Lihat progresku", text: "Tinjau hasil belajar dan pembahasan yang tersedia.", page: "results" as Page, icon: BarChart3 },
+        ]).map(a => (
+          <button className="action-card" key={a.title} onClick={() => navigate(a.page)}>
             <a.icon />
             <h3>{a.title}</h3>
             <p>{a.text}</p>

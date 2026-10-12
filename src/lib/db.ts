@@ -57,6 +57,7 @@ export type Profile = {
   role: "teacher" | "student";
   grade: string;
   subject: string;
+  subjects?: string[];
   school: string;
 };
 export type ClassRow = {

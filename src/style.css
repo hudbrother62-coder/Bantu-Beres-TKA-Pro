@@ -2007,3 +2007,40 @@ summary {
   .generator-controls { padding:0 13px; gap:2px 8px; grid-template-columns:repeat(2,minmax(0,1fr)); }
   .generator-controls .field:first-child { grid-column:1/-1; }
 }
+
+/* Role-oriented dashboard and multi-subject teaching */
+.teacher-subjects { width:100%; display:flex; flex-direction:column; gap:10px; }
+.teacher-subjects > p { margin:0 0 4px; line-height:1.6; }
+.teacher-subject-input { display:flex; align-items:stretch; gap:8px; min-width:0; }
+.teacher-subject-input select,.teacher-subject-input input { flex:1; min-width:0; width:100%; }
+.teacher-subject-input button { flex-shrink:0; min-width:88px; }
+.teacher-subject-chips { display:flex; flex-wrap:wrap; gap:8px; padding:6px 0; }
+.teacher-subject-chip { display:inline-flex; align-items:center; gap:8px; max-width:100%;
+  background:var(--soft); border:1px solid var(--line); border-radius:9px;
+  padding:5px 8px 5px 12px; font-size:12px; font-weight:600; overflow-wrap:anywhere; }
+.teacher-subject-chip button { border:0; background:transparent; color:var(--muted);
+  width:25px; height:25px; min-width:25px; padding:0; font-size:20px; }
+.teacher-subject-chip button:hover { color:var(--red); }
+.subject-validation { color:var(--red); }
+.dashboard-hero-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.dashboard-subjects { margin:0 0 28px; }
+.dashboard-subjects .section-heading { align-items:flex-start; }
+.dashboard-subjects .section-heading p { margin:3px 0; }
+.dashboard-subject-tags { display:flex; flex-wrap:wrap; gap:8px; }
+.dashboard-subject-tags span { border:1px solid var(--line); background:var(--soft);
+  padding:8px 12px; border-radius:9px; font-size:12px; font-weight:600; }
+.dashboard-priority-title p { margin:2px 0 12px; }
+.role-action-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.role-action-grid .action-card { min-width:0; padding:20px; }
+.role-action-grid .action-card h3 { overflow-wrap:anywhere; }
+@media(max-width:1180px) { .role-action-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:650px) {
+ .role-action-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+ .role-action-grid .action-card { padding:14px; }
+ .role-action-grid .action-card h3 { font-size:14px; }
+ .role-action-grid .action-card p { font-size:11px; }
+ .teacher-subject-input { flex-wrap:wrap; }
+ .teacher-subject-input button { min-height:42px; }
+ .dashboard-subjects .section-heading { gap:10px; }
+}
+@media(max-width:375px) { .role-action-grid { grid-template-columns:1fr; } }

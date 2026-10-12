@@ -12,6 +12,7 @@ import {
 import { api, rpc, type Profile, type ClassRow } from "../lib/db";
 import type { Question } from "../lib/core";
 import { SubjectPicker } from "./SubjectPicker";
+import { profileSubjects } from "../lib/subjects";
 import {
   Rich,
   Field,
@@ -201,7 +202,8 @@ export function Assistant({ profile }: { profile: Profile }) {
       <section className="chat-main">
         <div className="chat-controls">
           <Field label="Mata pelajaran aktif">
-            <SubjectPicker value={subject} onChange={setSubject} />
+            <SubjectPicker value={subject} onChange={setSubject}
+              extraSubjects={profileSubjects(profile)} />
           </Field>
           <Field label="Jenis bantuan">
             <select value={mode} onChange={(e) => setMode(e.target.value)}>

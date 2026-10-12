@@ -108,3 +108,13 @@ test("username identifiers are normalized consistently without a contact email",
   assert.throws(() => usernameEmail("bad email"));
   assert.throws(() => usernameEmail("ab"));
 });
+
+test("vocational subjects are individual subjects, deduplicated, and preserved", async () => {
+  const { SUBJECTS, normalizeSubjectList, profileSubjects } = await import("../src/lib/subjects.ts");
+  assert.ok(!SUBJECTS.includes("Dasar Kejuruan / SMK" as never));
+  assert.deepEqual(normalizeSubjectList(["Pemrograman Web", " Akuntansi Dasar ", "pemrograman web", "Dasar Kejuruan / SMK"]),
+    ["Pemrograman Web", "Akuntansi Dasar"]);
+  assert.deepEqual(profileSubjects({ subject: "Matematika", subjects: ["Teknik Sepeda Motor", "Bahasa Indonesia"] }),
+    ["Teknik Sepeda Motor", "Bahasa Indonesia"]);
+  assert.deepEqual(profileSubjects({ subject: "Fisika" }), ["Fisika"]);
+});

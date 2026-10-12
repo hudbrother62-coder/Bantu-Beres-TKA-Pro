@@ -7,9 +7,10 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { db, configured } from "../lib/db";
+import { db, configured, rpc } from "../lib/db";
 import { Field } from "./ui";
-import { SubjectPicker } from "./SubjectPicker";
+import { SubjectPicker, TeacherSubjects } from "./SubjectPicker";
+import { normalizeSubjectList } from "../lib/subjects";
 import { createUsernameAccount, normalizeUsername, usernameEmail } from "../lib/username";
 export default function Auth({
   initial,
@@ -42,12 +43,17 @@ export default function Auth({
       if (mode === "signup") {
         if (password !== f.get("confirm"))
           throw new Error("Konfirmasi kata sandi belum cocok.");
+        const teacherSubjects = role === "teacher"
+          ? normalizeSubjectList(JSON.parse(String(f.get("subjects") || "[]")))
+          : [];
+        if (role === "teacher" && !teacherSubjects.length)
+          throw new Error("Tambahkan minimal satu mata pelajaran yang Anda ampu.");
         await createUsernameAccount({
           username, password,
           name: String(f.get("name") || ""),
           role,
           grade: String(f.get("grade") || ""),
-          subject: String(f.get("subject") || ""),
+          subject: role === "teacher" ? teacherSubjects[0] : String(f.get("subject") || ""),
           school: String(f.get("school") || ""),
         });
         const { error } = await db.auth.signInWithPassword({
@@ -56,6 +62,12 @@ export default function Auth({
         if (error) {
           setMode("login");
           setMessage("Akun dibuat. Silakan masuk menggunakan username dan kata sandi.");
+        } else if (role === "teacher") {
+          try {
+            await rpc("tka_subjects", { subject_items: teacherSubjects });
+          } catch {
+            setMessage("Akun aktif. Tambahkan kembali mata pelajaran melalui Pengaturan.");
+          }
         }
       } else {
         const { error } = await db.auth.signInWithPassword({
@@ -142,19 +154,19 @@ export default function Auth({
               <Field label="Nama lengkap">
                 <input name="name" required autoComplete="name" />
               </Field>
-              <div className="form-grid">
-                <Field label="Jenjang / kelas">
-                  <input
-                    name="grade"
-                    defaultValue="XII"
-                    required
-                    placeholder="Contoh: XII SMA"
-                  />
+              <Field label={role === "teacher" ? "Jenjang / kelas yang diampu" : "Jenjang / kelas"}>
+                <input name="grade" defaultValue="XII" required
+                  placeholder="Contoh: XII SMA / XI SMK" />
+              </Field>
+              {role === "teacher" ? (
+                <Field label="Mata pelajaran yang diajarkan">
+                  <TeacherSubjects defaultValue={["Matematika"]} />
                 </Field>
-                <Field label="Mata pelajaran">
+              ) : (
+                <Field label="Mata pelajaran yang ingin dipelajari">
                   <SubjectPicker name="subject" defaultValue="Matematika" />
                 </Field>
-              </div>
+              )}
               <Field label="Sekolah / lembaga (opsional)">
                 <input name="school" placeholder="Boleh diisi nanti" />
               </Field>

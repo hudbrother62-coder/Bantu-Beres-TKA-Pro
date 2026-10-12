@@ -31,6 +31,7 @@ import {
 } from "./ui";
 import { exportTable, exportDocument } from "../lib/export";
 import { SubjectPicker } from "./SubjectPicker";
+import { profileSubjects } from "../lib/subjects";
 export function Classes({ profile }: { profile: Profile }) {
   const classes = useData<ClassRow & { member_count: number }>("classes"),
     [open, setOpen] = useState(false),
@@ -209,7 +210,8 @@ export function Classes({ profile }: { profile: Profile }) {
                   <input name="name" required placeholder="Contoh: XII-1" />
                 </Field>
                 <Field label="Mata pelajaran">
-                  <SubjectPicker name="subject" defaultValue={profile.subject} />
+                  <SubjectPicker name="subject" defaultValue={profile.subject}
+                    extraSubjects={profileSubjects(profile)} />
                 </Field>
               </>
             ) : (
@@ -481,7 +483,8 @@ export function Packages({ profile }: { profile: Profile }) {
               />
             </Field>
             <Field label="Mata pelajaran">
-              <SubjectPicker name="subject" value={packageSubject} onChange={setPackageSubject} />
+              <SubjectPicker name="subject" value={packageSubject} onChange={setPackageSubject}
+                extraSubjects={profileSubjects(profile)} />
             </Field>
             <Field label="Kelas penerima">
               <select name="class_id" required>
