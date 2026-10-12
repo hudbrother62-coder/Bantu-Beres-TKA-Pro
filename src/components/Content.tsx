@@ -72,7 +72,7 @@ export function Materials({ profile }: { profile: Profile }) {
                   {d.kind === "practice"
                     ? "Latihan mandiri"
                     : d.class_id
-                      ? "Materi kelas"
+                      ? "Materi project"
                       : "Pribadi"}
                 </span>
                 <h3>{d.title}</h3>
@@ -153,12 +153,12 @@ export function Materials({ profile }: { profile: Profile }) {
               />
             </Field>
             {profile.role === "teacher" && (
-              <Field label="Bagikan ke kelas">
+              <Field label="Bagikan ke project">
                 <select name="class_id" defaultValue={editing.class_id || ""}>
                   <option value="">Simpan pribadi</option>
                   {classes.data.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {c.name} · {c.subject} · {c.invite_code}
                     </option>
                   ))}
                 </select>

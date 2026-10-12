@@ -133,7 +133,7 @@ export default function App() {
         { id: "home", label: "Beranda Guru", icon: LayoutDashboard },
         { id: "ai", label: "Generator & Asisten AI", icon: MessageSquare },
         { id: "content", label: "Materi & Bank Soal", icon: Library },
-        { id: "classes", label: "Kelola Kelas", icon: Users },
+        { id: "classes", label: "Kelola Project", icon: Users },
         { id: "packages", label: "Susun Tryout", icon: ClipboardList },
         { id: "results", label: "Hasil & Laporan", icon: BarChart3 },
       ]
@@ -142,7 +142,7 @@ export default function App() {
         { id: "packages", label: "Tryout & Latihan", icon: ClipboardList },
         { id: "ai", label: "Tutor Belajar AI", icon: MessageSquare },
         { id: "results", label: "Progres Pribadi", icon: BarChart3 },
-        { id: "classes", label: "Kelasku", icon: Users },
+        { id: "classes", label: "Project Saya", icon: Users },
         { id: "content", label: "Materi Belajar", icon: Library },
       ];
   function navigate(id: Page) {
@@ -427,7 +427,7 @@ function Dashboard({
           </p>
           <div className="dashboard-hero-actions">
             <button className="primary" onClick={() => navigate(teacher ? "ai" : cls.data.length ? "packages" : "classes")}>
-              {teacher ? "Buat materi & soal" : cls.data.length ? "Kerjakan tryout" : "Gabung kelas"}
+              {teacher ? "Buat materi & soal" : cls.data.length ? "Kerjakan tryout" : "Gabung project"}
               <ArrowRight size={18} />
             </button>
             {teacher && <button onClick={() => navigate("settings")}>Kelola mata pelajaran</button>}
@@ -441,12 +441,12 @@ function Dashboard({
       </section>
       <div className="stats-grid">
         {(teacher ? [
-          { label: "Kelas dikelola", value: cls.data.length, icon: Users },
+          { label: "Project dikelola", value: cls.data.length, icon: Users },
           { label: "Paket diterbitkan", value: pkg.data.filter(p => p.published).length, icon: ClipboardList },
           { label: "Jawaban terkumpul", value: finished.length, icon: Check },
           { label: "Rata-rata hasil siswa", value: avg ?? "—", icon: BarChart3 },
         ] : [
-          { label: "Kelas diikuti", value: cls.data.length, icon: Users },
+          { label: "Project diikuti", value: cls.data.length, icon: Users },
           { label: "Latihan tersedia", value: pkg.data.length, icon: ClipboardList },
           { label: "Latihan selesai", value: finished.length, icon: Check },
           { label: "Rata-rata nilai", value: avg ?? "—", icon: BarChart3 },
@@ -476,20 +476,20 @@ function Dashboard({
         <div>
           <h2>{teacher ? "Ruang kerja utama guru" : "Mulai dari kebutuhan belajarmu"}</h2>
           <p className="muted">{teacher
-            ? "Siapkan soal dan materi, kelola kelas, lalu terbitkan tryout untuk siswa."
-            : "Ikuti kelas, pahami konsep, selesaikan latihan, lalu tinjau perkembanganmu."}</p>
+            ? "Siapkan soal dan materi, kelola project, lalu terbitkan tryout untuk siswa."
+            : "Ikuti project, pahami konsep, selesaikan latihan, lalu tinjau perkembanganmu."}</p>
         </div>
       </div>
       <div className="action-grid role-action-grid">
         {(teacher ? [
           { title: "Generator soal & materi", text: "Buat draf berdasarkan mapel, kelas, topik, dan level kognitif.", page: "ai" as Page, icon: MessageSquare },
           { title: "Bank soal & bahan ajar", text: "Telaah, edit, impor Excel, dan siapkan soal untuk tryout.", page: "content" as Page, icon: Library },
-          { title: "Kelola kelas", text: "Buat kelas, undang siswa, dan kendalikan akses AI kelas.", page: "classes" as Page, icon: Users },
+          { title: "Kelola project", text: "Buat project, undang siswa, dan kendalikan akses AI project.", page: "classes" as Page, icon: Users },
           { title: "Susun paket tryout", text: "Pilih soal tervalidasi, atur durasi, kemudian terbitkan.", page: "packages" as Page, icon: ClipboardList },
         ] : [
           { title: "Kerjakan tryout", text: "Lihat latihan dari guru, jawab soal dan kirim hasil.", page: "packages" as Page, icon: ClipboardList },
           { title: "Belajar bersama AI", text: "Pelajari konsep dengan contoh dan petunjuk bertahap.", page: "ai" as Page, icon: MessageSquare },
-          { title: "Gabung kelas", text: "Gunakan kode undangan untuk menerima latihan dari guru.", page: "classes" as Page, icon: Users },
+          { title: "Gabung project", text: "Gunakan kode undangan project untuk menerima latihan dari guru.", page: "classes" as Page, icon: Users },
           { title: "Lihat progresku", text: "Tinjau hasil belajar dan pembahasan yang tersedia.", page: "results" as Page, icon: BarChart3 },
         ]).map(a => (
           <button className="action-card" key={a.title} onClick={() => navigate(a.page)}>
@@ -502,7 +502,7 @@ function Dashboard({
       </div>
       <section className="panel">
         <div className="section-heading">
-          <h2>{teacher ? "Paket terbaru" : "Latihan dari kelas"}</h2>
+          <h2>{teacher ? "Paket terbaru" : "Latihan dari project"}</h2>
           <button className="link" onClick={() => navigate("packages")}>
             Lihat semua
           </button>
@@ -533,7 +533,7 @@ function Dashboard({
           <p className="muted">
             {teacher
               ? "Paket pertama akan muncul setelah Anda menyusunnya."
-              : "Bergabung ke kelas untuk menerima latihan dari guru."}
+              : "Gabung project guru untuk menerima latihan."}
           </p>
         )}
         <ErrorBox error={pkg.error} retry={pkg.refresh} />
@@ -658,11 +658,11 @@ function Landing({
             <h3>Saya Guru</h3>
             <p>
               Siapkan bahan ajar, telaah soal, susun tryout, dan lihat hasil
-              kelas untuk menentukan tindak lanjut.
+              project untuk menentukan tindak lanjut.
             </p>
             <ul>
               <li>Bahan ajar & bank soal</li>
-              <li>Kelas, latihan & tryout</li>
+              <li>Project, latihan & tryout</li>
               <li>Analisis & laporan</li>
             </ul>
             <button className="primary" onClick={() => onAuth("signup")}>
@@ -674,12 +674,12 @@ function Landing({
             <GraduationCap />
             <h3>Saya Siswa</h3>
             <p>
-              Belajar dengan petunjuk bertahap, kerjakan tugas kelas, dan
+              Belajar dengan petunjuk bertahap, kerjakan tugas project, dan
               temukan materi yang perlu dilatih.
             </p>
             <ul>
               <li>Chatbot pendamping belajar</li>
-              <li>Latihan mandiri & tugas kelas</li>
+              <li>Latihan mandiri & tugas project</li>
               <li>Pembahasan & progres pribadi</li>
             </ul>
             <button className="primary" onClick={() => onAuth("signup")}>

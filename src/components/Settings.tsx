@@ -105,7 +105,7 @@ export function SettingsPage({
           <p className="muted">
             {profile.role === "teacher"
               ? "Anda dapat menambah, mengganti, dan menghapus mapel umum atau kejuruan tanpa membuat akun lain. Mapel pertama adalah mapel utama."
-              : "Jenjang dan fokus belajar dapat diperbarui. Hak akses kelas mengikuti undangan guru."}
+              : "Jenjang dan fokus belajar dapat diperbarui. Hak akses project mengikuti undangan guru."}
           </p>
         </section>
         <section className="panel">
@@ -185,7 +185,7 @@ export function SettingsPage({
               onClick={() => {
                 if (
                   confirm(
-                    "Hapus API key? Fitur AI pribadi dan AI kelas Anda akan berhenti sampai dipasang kembali.",
+                    "Hapus API key? Fitur AI pribadi dan AI project Anda akan berhenti sampai dipasang kembali.",
                   )
                 )
                   void run(async () => {
@@ -218,7 +218,7 @@ export function SettingsPage({
           Pengaturan ini tidak mengubah atau melatih ulang bobot model AI.
         </p>
         <p className="muted">
-          Fitur kelas, soal, tryout, penilaian, dan ekspor tidak bergantung pada
+          Fitur project, soal, tryout, penilaian, dan ekspor tidak bergantung pada
           koneksi AI.
         </p>
       </section>
@@ -238,12 +238,12 @@ export function Guide({ profile }: { profile: Profile }) {
           "Buka Google AI Studio, buat API key, lalu salin ke Pengaturan AI. Isi nama model yang tersedia pada akun Anda. Pilih Tes koneksi & simpan. Jangan bagikan key ke siswa.",
         ],
         [
-          "Buat kelas",
-          "Buka Kelas, buat kelas, lalu bagikan kode undangan. Siswa mendaftar dan bergabung dengan akun sendiri.",
+          "Buat project",
+          "Buka Project, beri nama sesuai tujuan pembelajaran, lalu bagikan kode undangan. Anda dapat membuat beberapa project untuk rombel yang sama.",
         ],
         [
           "Siapkan bahan ajar",
-          "Gunakan Asisten AI dengan mode Bahan ajar. Sertakan materi rujukan dan tujuan pembelajaran. Periksa hasil, simpan, lalu bagikan ke kelas.",
+          "Gunakan Asisten AI dengan mode Bahan ajar. Sertakan materi rujukan dan tujuan pembelajaran. Periksa hasil, simpan, lalu bagikan ke project.",
         ],
         [
           "Isi dan telaah bank soal",
@@ -251,7 +251,7 @@ export function Guide({ profile }: { profile: Profile }) {
         ],
         [
           "Susun paket",
-          "Pilih kelas, mapel, jumlah soal, komposisi L1/L2/L3, durasi, dan jadwal. Komposisi harus sesuai stok. Periksa pratinjau, kemudian terbitkan.",
+          "Pilih project tujuan, mapel, jumlah soal, komposisi L1/L2/L3, durasi, dan jadwal. Project menentukan penerima tryout.",
         ],
         [
           "Lihat hasil dan tindak lanjut",
@@ -264,12 +264,12 @@ export function Guide({ profile }: { profile: Profile }) {
           "Atur nama, jenjang, dan mata pelajaran agar bantuan belajar sesuai kebutuhan.",
         ],
         [
-          "Gabung kelas",
-          "Minta kode undangan guru. Buka Kelasku, lalu Gabung kelas. Materi dan latihan akan tersedia sesuai penerbitan guru.",
+          "Gabung project",
+          "Minta kode undangan guru. Buka Projectku, lalu Gabung project. Materi dan latihan akan tersedia sesuai penerbitan guru.",
         ],
         [
           "Belajar dengan AI",
-          "Pasang API key pribadi atau pilih AI kelas yang diaktifkan guru. Minta petunjuk, contoh, dan penjelasan bertahap. Percakapan pribadi tidak dibaca guru otomatis.",
+          "Pasang API key pribadi atau pilih AI project yang diaktifkan guru. Minta petunjuk, contoh, dan penjelasan bertahap. Percakapan pribadi tidak dibaca guru otomatis.",
         ],
         [
           "Latihan mandiri",
@@ -281,7 +281,7 @@ export function Guide({ profile }: { profile: Profile }) {
         ],
         [
           "Lihat progres",
-          "Buka Progres. Nilai dan pembahasan kelas muncul setelah guru membukanya. Gunakan topik dengan capaian rendah sebagai prioritas belajar.",
+          "Buka Progres. Nilai dan pembahasan project muncul setelah guru membukanya. Gunakan topik dengan capaian rendah sebagai prioritas belajar.",
         ],
       ];
   return (
@@ -311,7 +311,7 @@ export function Guide({ profile }: { profile: Profile }) {
           <summary>AI tidak memberikan jawaban</summary>
           <p>
             Periksa key dan nama model, kuota Google, serta koneksi. Untuk AI
-            kelas, pastikan guru mengaktifkannya. AI kelas ditutup selama
+            project, pastikan guru mengaktifkannya. AI project ditutup selama
             tryout. Kurangi panjang permintaan jika keluaran terpotong.
           </p>
         </details>

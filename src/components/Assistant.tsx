@@ -224,7 +224,7 @@ export function Assistant({ profile }: { profile: Profile }) {
                 .filter((c) => c.ai_enabled)
                 .map((c) => (
                   <option key={c.id} value={c.id}>
-                    AI kelas {c.name}
+                    AI project {c.name}
                   </option>
                 ))}
             </select>

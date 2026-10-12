@@ -45,17 +45,17 @@ export function Classes({ profile }: { profile: Profile }) {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">BELAJAR BERSAMA</span>
-          <h1>{teacher ? "Kelas Anda" : "Kelasku"}</h1>
+          <span className="eyebrow">RUANG PROJECT PEMBELAJARAN</span>
+          <h1>{teacher ? "Project Saya" : "Project yang Diikuti"}</h1>
           <p>
             {teacher
-              ? "Hubungkan materi, latihan, dan perkembangan siswa."
+              ? "Kelola materi, soal, tryout dan peserta dalam setiap project."
               : "Bergabung dengan kode undangan dari guru."}
           </p>
         </div>
         <button className="primary" onClick={() => setOpen(true)}>
           <Plus size={18} />
-          {teacher ? "Buat kelas" : "Gabung kelas"}
+          {teacher ? "Buat project" : "Gabung project"}
         </button>
       </div>
       <ErrorBox error={classes.error} retry={classes.refresh} />
@@ -70,7 +70,7 @@ export function Classes({ profile }: { profile: Profile }) {
               </span>
               <h2>{c.name}</h2>
               <p>
-                {c.subject} · {c.member_count} siswa
+                {c.subject} · {c.member_count} peserta
               </p>
               {teacher && (
                 <>
@@ -78,11 +78,11 @@ export function Classes({ profile }: { profile: Profile }) {
                     <span>{c.invite_code}</span>
                     <button
                       className="icon"
-                      aria-label="Salin kode kelas"
+                      aria-label="Salin kode project"
                       onClick={() =>
                         void navigator.clipboard
                           .writeText(c.invite_code)
-                          .then(() => notice("Kode kelas disalin."))
+                          .then(() => notice("Kode project disalin."))
                           .catch(() =>
                             notice("Salin kode yang tampil pada kartu.", true),
                           )
@@ -124,7 +124,7 @@ export function Classes({ profile }: { profile: Profile }) {
                           })
                         }
                       />{" "}
-                      Aktifkan bantuan AI kelas
+                      Aktifkan bantuan AI project
                     </label>
                     <Field label="Kuota per siswa / hari">
                       <input
@@ -163,24 +163,24 @@ export function Classes({ profile }: { profile: Profile }) {
         </div>
       ) : (
         <Empty
-          title={teacher ? "Belum ada kelas" : "Kamu belum bergabung ke kelas"}
+          title={teacher ? "Belum ada project" : "Kamu belum bergabung ke project"}
           detail={
             teacher
-              ? "Buat kelas pertama dan bagikan kode undangannya."
-              : "Mintalah kode kelas kepada guru, lalu pilih Gabung kelas."
+              ? "Buat project untuk topik atau tryout tertentu. Satu rombel boleh memiliki banyak project."
+              : "Mintalah kode project kepada guru, lalu pilih Gabung project."
           }
         />
       )}
       <div className="guide-strip">
         <Users />
         <p>
-          Siswa mendaftar dengan akun sendiri. Kode kelas menghubungkan akun
-          siswa ke kelas; tidak membuat akun otomatis.
+          Siswa mendaftar dengan akun sendiri. Kode project menghubungkan akun
+          siswa ke project; tidak membuat akun otomatis.
         </p>
       </div>
       {open && (
         <Modal
-          title={teacher ? "Buat kelas" : "Gabung kelas"}
+          title={teacher ? "Buat project" : "Gabung project"}
           onClose={() => setOpen(false)}
         >
           <form
@@ -198,7 +198,7 @@ export function Classes({ profile }: { profile: Profile }) {
                 await classes.refresh();
                 notice(
                   teacher
-                    ? "Kelas dibuat. Bagikan kode kepada siswa."
+                    ? "Project berhasil dibuat. Bagikan kode undangannya kepada siswa."
                     : "Berhasil bergabung.",
                 );
               });
@@ -206,8 +206,13 @@ export function Classes({ profile }: { profile: Profile }) {
           >
             {teacher ? (
               <>
-                <Field label="Nama kelas">
-                  <input name="name" required placeholder="Contoh: XII-1" />
+                <Field label="Nama project">
+                  <input name="name" required minLength={2} maxLength={100}
+                    placeholder="Contoh: Tryout TKA XII IPA 1" />
+                  <small className="muted">
+                    Nama bebas. Beberapa project boleh dibuat untuk kelas atau rombel yang sama.
+                    Setiap project mempunyai kode undangan sendiri.
+                  </small>
                 </Field>
                 <Field label="Mata pelajaran">
                   <SubjectPicker name="subject" defaultValue={profile.subject}
@@ -215,7 +220,7 @@ export function Classes({ profile }: { profile: Profile }) {
                 </Field>
               </>
             ) : (
-              <Field label="Kode kelas">
+              <Field label="Kode project">
                 <input
                   name="code"
                   required
@@ -225,16 +230,16 @@ export function Classes({ profile }: { profile: Profile }) {
               </Field>
             )}
             <button className="primary" disabled={busy}>
-              {teacher ? "Buat kelas" : "Gabung"}
+              {teacher ? "Buat project" : "Gabung"}
             </button>
           </form>
         </Modal>
       )}
       {members && (
-        <Modal title="Peserta kelas" onClose={() => setMembers(null)}>
+        <Modal title="Peserta project" onClose={() => setMembers(null)}>
           <button
             onClick={() =>
-              void run(() => exportTable("Peserta_Kelas", members))
+              void run(() => exportTable("Peserta_Project", members))
             }
           >
             <FileDown size={17} />
@@ -250,7 +255,7 @@ export function Classes({ profile }: { profile: Profile }) {
           ) : (
             <Empty
               title="Belum ada peserta"
-              detail="Bagikan kode kelas kepada siswa."
+              detail="Bagikan kode project kepada siswa."
             />
           )}
         </Modal>
@@ -322,7 +327,7 @@ export function Packages({ profile }: { profile: Profile }) {
               </p>
               <small>
                 {classes.data.find((c) => c.id === p.class_id)?.name ||
-                  "Belum ditugaskan ke kelas"}
+                  "Belum ditugaskan ke project"}
               </small>
               {p.starts_at && (
                 <p className="muted">
@@ -363,7 +368,7 @@ export function Packages({ profile }: { profile: Profile }) {
                           notice(
                             p.published
                               ? "Paket ditutup."
-                              : "Paket diterbitkan ke kelas.",
+                              : "Paket diterbitkan ke project.",
                           );
                         })
                       }
@@ -423,7 +428,7 @@ export function Packages({ profile }: { profile: Profile }) {
         </div>
       ) : (
         <Empty
-          title={teacher ? "Belum ada paket" : "Belum ada latihan kelas"}
+          title={teacher ? "Belum ada paket" : "Belum ada latihan project"}
           detail={
             teacher
               ? "Siapkan bank soal dan tandai soal yang sudah ditelaah."
@@ -486,12 +491,12 @@ export function Packages({ profile }: { profile: Profile }) {
               <SubjectPicker name="subject" value={packageSubject} onChange={setPackageSubject}
                 extraSubjects={profileSubjects(profile)} />
             </Field>
-            <Field label="Kelas penerima">
+            <Field label="Project tujuan">
               <select name="class_id" required>
-                <option value="">Pilih kelas</option>
+                <option value="">Pilih project</option>
                 {classes.data.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {c.name} · {c.subject} · {c.invite_code}
                   </option>
                 ))}
               </select>

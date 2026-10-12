@@ -141,7 +141,7 @@ export default function Auth({
                   onClick={() => setRole("teacher")}
                 >
                   <BookOpen /> Saya Guru
-                  <small>Siapkan materi & kelola kelas</small>
+                  <small>Siapkan materi & kelola project</small>
                 </button>
                 <button
                   type="button"

@@ -11,6 +11,11 @@ test('database enforces ownership, hidden keys, server scoring, and submission i
  await pg.exec('grant usage on schema auth to authenticated;set role authenticated;');
  const act=async(name:string,payload:unknown={})=>(await pg.query<{value:any}>('select public.tka_action($1,$2) value',[name,JSON.stringify(payload)])).rows[0].value;
  await as(teacher);const c=await act('create_class',{name:'XII-1',subject:'Matematika'});
+ // Two independent projects may target the same cohort and subject.
+ const sameCohortProject=await act('create_class',{name:'XII-1',subject:'Matematika'});
+ assert.notEqual(sameCohortProject.id,c.id);
+ assert.notEqual(sameCohortProject.invite_code,c.invite_code);
+ assert.equal((await act('classes')).length,2);
  const sample={subject:'Matematika',topic:'Bilangan',level:'L1',question:'Berapa hasil 2 + 2?',options:['3','4','5','6'],answer:1,explanation:'Dua ditambah dua sama dengan empat.'};
  await act('save_question',sample);const q=(await act('questions'))[0];
  await assert.rejects(act('create_package',{title:'Draft',duration:10,class_id:c.id,question_ids:[q.id]}));

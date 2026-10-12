@@ -1,6 +1,6 @@
 # Bantu Beres TKA Pro
 
-Ruang guru dan siswa: bahan ajar, bank soal, kelas, paket tryout, penilaian server, analisis, ekspor dan Gemini BYOK. Nama dan logo mengikuti permintaan pemilik.
+Ruang guru dan siswa: bahan ajar, bank soal, project, paket tryout, penilaian server, analisis, ekspor dan Gemini BYOK. Nama dan logo mengikuti permintaan pemilik.
 
 ## Development
 ```sh
@@ -21,10 +21,10 @@ npm run dev
 No database environment variable produces an explicit setup notice; authentication is never simulated. The project-creation connector returned `get_cost UNAVAILABLE` during initial setup, so database creation and live integration require completion before production usage.
 
 ## AI
-Users install Gemini API keys through Settings. The server tests the selected model then encrypts the key with AES-256-GCM. Role/system instructions and configurable direction improve output; this is **not model fine-tuning**. Generated questions are structurally validated and remain drafts pending teacher review. Class sharing has a daily per-student limit and is disabled during an active classroom attempt.
+Users install Gemini API keys through Settings. The server tests the selected model then encrypts the key with AES-256-GCM. Role/system instructions and configurable direction improve output; this is **not model fine-tuning**. Generated questions are structurally validated and remain drafts pending teacher review. Project sharing has a daily per-student limit and is disabled during an active project attempt.
 
 ## Current scope
-Implemented: teacher/student accounts, private chat history, material editor/sharing, MCQ bank with draft/review/archive, Excel import preview/template, snapshot packages, scheduling, server timer/scoring, idempotent submission, class invitations, released results, topic analytics, individual practice, Word/PDF/Excel exports, responsive light/dark interface and text guides.
+Implemented: teacher/student accounts, private chat history, material editor/sharing, MCQ bank with draft/review/archive, Excel import preview/template, snapshot packages, scheduling, server timer/scoring, idempotent submission, project invitations, released results, topic analytics, individual practice, Word/PDF/Excel exports, responsive light/dark interface and text guides.
 
 Launch limitations: no Android APK, dual-role switching, essay/complex-question scoring, student-account bulk provisioning, automatic adaptive study plan, document version restoration, offline-ready full app, or demo video until its link is supplied. PDF export is basic text layout; DOCX is the editable export for math-rich material. User-uploaded image/PDF context currently limited to 100 KB, with pasted text for larger sources. No official TKA curriculum compliance claim.
 
