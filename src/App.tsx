@@ -121,6 +121,12 @@ export default function App() {
     setProfile(null);
     void loadProfile();
   }, [session?.user.id]);
+  useEffect(() => {
+    if (!session) return;
+    const refresh = () => { void loadProfile(); };
+    window.addEventListener("tka-profile-updated", refresh);
+    return () => window.removeEventListener("tka-profile-updated", refresh);
+  }, [session?.user.id]);
   const teacher = profile?.role === "teacher";
   const nav: { id: Page; label: string; icon: typeof BookOpen }[] = teacher
     ? [

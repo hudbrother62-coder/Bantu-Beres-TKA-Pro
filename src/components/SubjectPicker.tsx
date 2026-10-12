@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SUBJECTS, isListedSubject, normalizeSubjectList } from "../lib/subjects";
+import { SUBJECTS, normalizeSubjectList } from "../lib/subjects";
 
 type PickerProps = {
   name?: string;

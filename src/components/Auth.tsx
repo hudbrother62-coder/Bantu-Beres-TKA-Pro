@@ -65,6 +65,7 @@ export default function Auth({
         } else if (role === "teacher") {
           try {
             await rpc("tka_subjects", { subject_items: teacherSubjects });
+            window.dispatchEvent(new Event("tka-profile-updated"));
           } catch {
             setMessage("Akun aktif. Tambahkan kembali mata pelajaran melalui Pengaturan.");
           }
@@ -160,7 +161,7 @@ export default function Auth({
               </Field>
               {role === "teacher" ? (
                 <Field label="Mata pelajaran yang diajarkan">
-                  <TeacherSubjects defaultValue={["Matematika"]} />
+                  <TeacherSubjects />
                 </Field>
               ) : (
                 <Field label="Mata pelajaran yang ingin dipelajari">
