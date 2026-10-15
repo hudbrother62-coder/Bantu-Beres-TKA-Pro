@@ -2071,3 +2071,22 @@ summary {
   .groq-setup-guide li { font-size:13px; }
   .groq-setup-link { width:100%; justify-content:center; }
 }
+
+/* Responsive YouTube tutorial in the Guru/Siswa usage guide */
+.guide-video-section { min-width:0; }
+.guide-video-section .section-heading { margin-bottom:16px; }
+.guide-video-frame {
+  width:100%;
+  max-width:960px;
+  aspect-ratio:16 / 9;
+  overflow:hidden;
+  border-radius:12px;
+  background:#080c13;
+  border:1px solid var(--line);
+}
+.guide-video-frame iframe { display:block; width:100%; height:100%; border:0; }
+.guide-video-link { display:inline-flex; align-items:center; gap:8px; margin-top:16px; font-weight:650; }
+@media (max-width:650px) {
+  .guide-video-frame { border-radius:9px; }
+  .guide-video-section .section-heading { margin-bottom:12px; }
+}

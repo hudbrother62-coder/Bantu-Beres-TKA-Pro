@@ -158,3 +158,13 @@ test("Groq returns clear invalid-credentials errors without leaking key", async 
  );
 });
 
+
+test("Guide embeds supplied YouTube video and provides accessible fallback link", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("../src/components/Settings.tsx", import.meta.url), "utf8");
+  assert.match(src, /youtube-nocookie\\.com\\/embed\\/8iHwQ19dIeQ/);
+  assert.match(src, /href="https:\\/\\/youtu\\.be\\/8iHwQ19dIeQ"/);
+  assert.match(src, /loading="lazy"/);
+  assert.match(src, /allowFullScreen/);
+  assert.doesNotMatch(src, /Video demo akan ditambahkan/);
+});
