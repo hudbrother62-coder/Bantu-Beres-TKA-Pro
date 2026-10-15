@@ -118,3 +118,14 @@ test("vocational subjects are individual subjects, deduplicated, and preserved",
     ["Teknik Sepeda Motor", "Bahasa Indonesia"]);
   assert.deepEqual(profileSubjects({ subject: "Fisika" }), ["Fisika"]);
 });
+
+test("Google Gemini errors are specific and models are sorted", async () => {
+  const { explainGoogleError, recommendedModels } = await import("../src/lib/gemini-errors.ts");
+  assert.match(explainGoogleError(400, {error:{message:"API key not valid",details:[{reason:"API_KEY_INVALID"}]}}), /API key tidak valid/i);
+  assert.match(explainGoogleError(400, {error:{message:"Invalid generationConfig"}}), /format permintaan/i);
+  assert.match(explainGoogleError(403, {error:{status:"PERMISSION_DENIED"}}), /ditolak/i);
+  assert.match(explainGoogleError(404, {error:{status:"NOT_FOUND"}},"gemini-3.8-flash"), /3.8-flash/i);
+  assert.match(explainGoogleError(429, {error:{status:"RESOURCE_EXHAUSTED"}}), /Kuota/i);
+  assert.deepEqual(recommendedModels(["gemini-3.5-flash-lite","gemini-3.8-flash","gemini-3.8-flash","gemini-3.8-live"]),
+    ["gemini-3.8-flash","gemini-3.5-flash-lite"]);
+});

@@ -91,7 +91,10 @@ export default async function handler(req: Request, res: Response) {
       systemInstruction: { parts: [{ text: instruction }] },
       contents,
       generationConfig: {
-        temperature: mode === "questions" ? 0.3 : 0.5,
+        // Gemini 3+ no longer accepts older sampling controls in this API.
+        ...(/^gemini-(3|4)[.-]/.test(String(cfg.model))
+          ? {}
+          : { temperature: mode === "questions" ? 0.3 : 0.5 }),
         maxOutputTokens: 12000,
         ...(mode === "questions"
           ? { responseMimeType: "application/json" }

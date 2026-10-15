@@ -10,6 +10,7 @@ import { api, rpc, type Profile } from "../lib/db";
 import { Field, ErrorBox, useWork, useNotice } from "./ui";
 import { SubjectPicker, TeacherSubjects } from "./SubjectPicker";
 import { normalizeSubjectList, profileSubjects } from "../lib/subjects";
+import { recommendedModels } from "../lib/gemini-errors";
 export function SettingsPage({
   profile,
   onProfile,
@@ -23,6 +24,10 @@ export function SettingsPage({
       "Jelas, terstruktur, dan sesuai jenjang siswa.",
     ),
     [apiKey, setApiKey] = useState(""),
+    [availableModels, setAvailableModels] = useState<string[]>([]),
+    [modelLoading, setModelLoading] = useState(false),
+    [modelNotice, setModelNotice] = useState(""),
+    [connectError, setConnectError] = useState(""),
     [error, setError] = useState("");
   const { busy, run } = useWork(),
     notice = useNotice();
@@ -120,17 +125,23 @@ export function SettingsPage({
           </div>
           <ErrorBox error={error} />
           <p>
-            Gunakan API key Gemini milik Anda. Biaya dan kuota layanan AI
-            mengikuti akun Google Anda.
+            Gunakan API key Gemini dari Google AI Studio, lalu cari model yang
+            diizinkan project Google Anda. Kuota dan biaya mengikuti akun Google.
           </p>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               void run(async () => {
-                const r = await api("settings", { apiKey, model, direction });
-                setApiKey("");
-                setInstalled(true);
-                notice(r.message);
+                setConnectError("");
+                try {
+                  const r = await api("settings", { apiKey, model: model.trim(), direction });
+                  setApiKey("");
+                  setInstalled(true);
+                  notice(r.message);
+                } catch (cause) {
+                  setConnectError(cause instanceof Error ? cause.message : "Koneksi Gemini gagal.");
+                  throw cause;
+                }
               });
             }}
           >
@@ -151,13 +162,43 @@ export function SettingsPage({
               />
             </Field>
             <Field label="Model">
-              <input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                required
-                placeholder="Nama model dari Google AI Studio"
-              />
+              <input list="tka-gemini-model-choices" value={model}
+                onChange={e => { setModel(e.target.value); setModelNotice(""); }}
+                required placeholder="Pilih ID model Gemini" />
+              <datalist id="tka-gemini-model-choices">
+                {recommendedModels([
+                  ...availableModels, "gemini-3.8-flash", "gemini-3.6-flash",
+                  "gemini-3.5-flash-lite", "gemini-2.5-flash",
+                ]).map(id => <option value={id} key={id} />)}
+              </datalist>
+              <div className="model-lookup-row">
+                <button type="button" disabled={modelLoading || busy || apiKey.trim().length < 20}
+                  onClick={async () => {
+                    setModelLoading(true);
+                    setConnectError("");
+                    setModelNotice("");
+                    try {
+                      const response = await api("settings", { apiKey, listModels: true });
+                      const found = response.models as string[];
+                      setAvailableModels(found);
+                      if (!found.includes(model)) setModel(found[0]);
+                      setModelNotice(response.message);
+                    } catch (cause) {
+                      setConnectError(cause instanceof Error ? cause.message : "Daftar model gagal dimuat.");
+                    } finally {
+                      setModelLoading(false);
+                    }
+                  }}>
+                  {modelLoading ? "Memeriksa model…" : "Cari model dari API key"}
+                </button>
+              </div>
+              {modelNotice && <small className="muted" role="status">{modelNotice}</small>}
+              <small className="muted">
+                Model yang tampil belum tentu memiliki kuota aktif.
+                Gunakan Tes koneksi &amp; simpan untuk memastikan akses.
+              </small>
             </Field>
+            {connectError && <div className="alert error" role="alert">{connectError}</div>}
             <Field label="Arah jawaban AI">
               <textarea
                 value={direction}
