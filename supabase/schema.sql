@@ -11,7 +11,7 @@ create table tka_private.documents(id uuid primary key default gen_random_uuid()
 create table tka_private.packages(id uuid primary key default gen_random_uuid(),owner_id uuid not null references public.tka_profiles(id),class_id uuid references tka_private.classes(id),title text not null,subject text not null,duration int not null check(duration between 1 and 240),questions jsonb not null,keys jsonb not null,published boolean default false,release_results boolean default false,starts_at timestamptz,ends_at timestamptz,created_at timestamptz default now());
 create table tka_private.attempts(id uuid primary key default gen_random_uuid(),student_id uuid not null references public.tka_profiles(id),package_id uuid not null references tka_private.packages(id),started_at timestamptz not null default now(),submitted_at timestamptz,answers jsonb not null default '{}',score numeric,correct int,unique(student_id,package_id));
 create table tka_private.chats(id uuid primary key default gen_random_uuid(),owner_id uuid references public.tka_profiles(id),title text not null,messages jsonb not null default '[]',created_at timestamptz default now());
-create table tka_private.ai_settings(owner_id uuid primary key references public.tka_profiles(id),encrypted_key text not null,model text not null default 'gemini-2.5-flash',direction text not null default 'Jelas, terstruktur, dan sesuai jenjang siswa.');
+create table tka_private.ai_settings(owner_id uuid primary key references public.tka_profiles(id),encrypted_key text not null,model text not null default 'groq:openai/gpt-oss-20b',direction text not null default 'Jelas, terstruktur, dan sesuai jenjang siswa.');
 create table tka_private.ai_usage(owner_id uuid references public.tka_profiles(id),user_id uuid references public.tka_profiles(id),day date not null default current_date,count int not null default 0,primary key(owner_id,user_id,day));
 alter table tka_private.classes enable row level security;
 alter table tka_private.members enable row level security;
@@ -146,7 +146,7 @@ begin
   else update tka_private.chats set messages=payload->'messages' where id=(payload->>'id')::uuid and owner_id=actor returning to_jsonb(chats) into result;if not found then raise exception 'Percakapan tidak dapat diakses.';end if;end if;return result;
  elsif action='delete_chat' then delete from tka_private.chats where id=(payload->>'id')::uuid and owner_id=actor;return jsonb_build_object('ok',true);
  elsif action='ai_status' then
-  return coalesce((select jsonb_build_object('installed',true,'model',model,'direction',direction) from tka_private.ai_settings where owner_id=actor),jsonb_build_object('installed',false,'model','gemini-2.5-flash','direction','Jelas, terstruktur, dan sesuai jenjang siswa.'));
+  return coalesce((select jsonb_build_object('installed',true,'model',model,'direction',direction) from tka_private.ai_settings where owner_id=actor),jsonb_build_object('installed',false,'model','groq:openai/gpt-oss-20b','direction','Jelas, terstruktur, dan sesuai jenjang siswa.'));
  elsif action='save_ai' then
   if length(payload->>'encrypted_key')<20 then raise exception 'API key belum tersedia.';end if;
   insert into tka_private.ai_settings values(actor,payload->>'encrypted_key',left(payload->>'model',100),left(coalesce(payload->>'direction',''),1000)) on conflict(owner_id) do update set encrypted_key=excluded.encrypted_key,model=excluded.model,direction=excluded.direction;return jsonb_build_object('ok',true);

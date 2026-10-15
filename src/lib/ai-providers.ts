@@ -63,13 +63,14 @@ export async function groqChat(
   messages: {role: string;content:string}[],
   jsonMode = false,
   fetcher: typeof fetch = fetch,
+  timeoutMs = 55000,
 ): Promise<string> {
   const payload = groqRequest(model, system, messages, jsonMode);
   const response = await fetcher("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {"Content-Type": "application/json", Authorization: "Bearer " + key},
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(55000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const raw: unknown = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(describeGroqError(response.status, raw));

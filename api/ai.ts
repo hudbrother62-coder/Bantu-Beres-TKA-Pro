@@ -3,13 +3,12 @@ import {
   authorized,
   action,
   decrypt,
-  gemini,
   errorMessage,
   type Request,
   type Response,
 } from "./_shared.js";
 import { buildSystemPrompt, validateGeneratedQuestions } from "../src/lib/core.js";
-import { groqChat, modelFromStoredModel, providerFromStoredModel } from "../src/lib/ai-providers.js";
+import { groqChat, modelFromStoredModel } from "../src/lib/ai-providers.js";
 export const config = { maxDuration: 60 };
 export default async function handler(req: Request, res: Response) {
   res.setHeader("Cache-Control", "no-store");
@@ -70,47 +69,20 @@ export default async function handler(req: Request, res: Response) {
       throw new Error(
         "Lampiran maksimal sekitar 100 KB untuk pengiriman langsung. Gunakan teks untuk dokumen lebih besar.",
       );
-    const contents = messages
-      .slice(-16)
-      .map((m, i, arr) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [
-          { text: m.content.slice(0, 20000) },
-          ...(attachment && i === arr.length - 1
-            ? [
-                {
-                  inlineData: {
-                    mimeType: attachment.mimeType,
-                    data: attachment.data,
-                  },
-                },
-              ]
-            : []),
-        ],
-      }));
-    const body = {
-      systemInstruction: { parts: [{ text: instruction }] },
-      contents,
-      generationConfig: {
-        // Gemini 3+ no longer accepts older sampling controls in this API.
-        ...(/^gemini-(3|4)[.-]/.test(String(cfg.model))
-          ? {}
-          : { temperature: mode === "questions" ? 0.3 : 0.5 }),
-        maxOutputTokens: 12000,
-        ...(mode === "questions"
-          ? { responseMimeType: "application/json" }
-          : {}),
-      },
-    };
-    const provider = providerFromStoredModel(String(cfg.model));
-    const model = modelFromStoredModel(String(cfg.model));
-    if (provider === "groq" && attachment) {
-      throw new Error("Model Groq gratis yang dipilih mendukung teks saja. Hapus lampiran gambar/PDF atau salin isinya ke kolom dokumen sumber.");
+    // Only text models are offered by GroqCloud in this app.
+    if (attachment) {
+      throw new Error(
+        "Groq pada TKA Pro menggunakan teks. Salin isi PDF atau gambar menjadi teks, lalu kirim kembali."
+      );
     }
-    const text = provider === "groq"
-      ? await groqChat(apiKey, model, instruction,
-          messages.slice(-12).map(m => ({role:m.role,content:m.content})), mode === "questions")
-      : await gemini(apiKey, model, body);
+    const model = modelFromStoredModel(String(cfg.model));
+    const text = await groqChat(
+      apiKey,
+      model,
+      instruction,
+      messages.slice(-12).map(m => ({ role: m.role, content: m.content })),
+      mode === "questions"
+    );
     if (mode === "questions") {
       let parsed;
       try {

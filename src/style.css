@@ -2044,3 +2044,30 @@ summary {
  .dashboard-subjects .section-heading { gap:10px; }
 }
 @media(max-width:375px) { .role-action-grid { grid-template-columns:1fr; } }
+
+/* Inline GroqCloud onboarding within AI Settings */
+.groq-setup-guide {
+  border:1px solid var(--line);
+  background:var(--soft);
+  border-radius:12px;
+  padding:16px 18px;
+  margin:18px 0 22px;
+}
+.groq-setup-guide h3 { margin:0 0 10px; font-size:16px; }
+.groq-setup-guide ol { margin:0; padding-left:23px; display:grid; gap:8px; }
+.groq-setup-guide li { line-height:1.65; font-size:13px; }
+.groq-setup-guide a { display:inline-flex; align-items:center; gap:4px; color:var(--accent); font-weight:650; }
+.groq-setup-guide code { font-size:12px; }
+.groq-setup-link {
+  margin-top:16px;
+  padding:10px 13px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  text-decoration:none;
+}
+.groq-setup-guide .groq-setup-link { background:var(--surface); }
+@media(max-width:650px){
+  .groq-setup-guide { padding:14px; }
+  .groq-setup-guide li { font-size:13px; }
+  .groq-setup-link { width:100%; justify-content:center; }
+}

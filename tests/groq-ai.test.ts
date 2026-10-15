@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 
-test("Gemini configuration follows project membership and never requires an admin key in browser", async () => {
+test("Groq configuration follows project membership and never requires an admin key in browser", async () => {
  const pg = new PGlite();
  await pg.exec(`create role service_role;create role anon;create role authenticated;
  create schema auth;
@@ -24,7 +24,7 @@ test("Gemini configuration follows project membership and never requires an admi
  const context = async (id:string|null=null) =>
   (await pg.query<{value:any}>("select public.tka_ai_context($1::jsonb) value",[JSON.stringify({class_id:id})])).rows[0].value;
  await as(teacher);
- await act("save_ai",{encrypted_key:"encrypted-test-placeholder-not-a-real-key",model:"gemini-3.8-flash",direction:"clear"});
+ await act("save_ai",{encrypted_key:"encrypted-test-placeholder-not-a-real-key",model:"groq:openai/gpt-oss-20b",direction:"clear"});
  const own = await context();
  assert.equal(own.encrypted_key,"encrypted-test-placeholder-not-a-real-key");
  const project = await act("create_class",{name:"TKA project",subject:"Matematika"});
@@ -36,7 +36,7 @@ test("Gemini configuration follows project membership and never requires an admi
  await as(teacher);
  await act("class_settings",{id:project.id,ai_enabled:true,ai_daily_limit:10});
  await as(student);
- assert.equal((await context(project.id)).model,"gemini-3.8-flash");
+ assert.equal((await context(project.id)).model,"groq:openai/gpt-oss-20b");
  await as(outsider);
  await assert.rejects(context(project.id));
  await pg.close();

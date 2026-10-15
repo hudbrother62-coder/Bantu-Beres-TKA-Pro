@@ -119,33 +119,13 @@ test("vocational subjects are individual subjects, deduplicated, and preserved",
   assert.deepEqual(profileSubjects({ subject: "Fisika" }), ["Fisika"]);
 });
 
-test("Google Gemini errors are specific and models are sorted", async () => {
-  const { explainGoogleError, recommendedModels } = await import("../src/lib/gemini-errors.ts");
-  assert.match(explainGoogleError(400, {error:{message:"API key not valid",details:[{reason:"API_KEY_INVALID"}]}}), /API key tidak valid/i);
-  assert.match(explainGoogleError(400, {error:{message:"Invalid generationConfig"}}), /format permintaan/i);
-  assert.match(explainGoogleError(403, {error:{status:"PERMISSION_DENIED"}}), /ditolak/i);
-  assert.match(explainGoogleError(404, {error:{status:"NOT_FOUND"}},"gemini-3.8-flash"), /3.8-flash/i);
-  assert.match(explainGoogleError(429, {error:{status:"RESOURCE_EXHAUSTED"}}), /Kuota/i);
-  assert.deepEqual(recommendedModels(["gemini-3.5-flash-lite","gemini-3.8-flash","gemini-3.8-flash","gemini-3.8-live"]),
-    ["gemini-3.5-flash-lite","gemini-3.8-flash"]);
-});
-
-test("403 Google Gemini project restrictions are distinct from unavailable models", async () => {
- const { explainGoogleError, recommendedModels } = await import("../src/lib/gemini-errors.ts");
- assert.match(explainGoogleError(403,{error:{message:"Your project has been denied access"}}),/memblokir akses project/i);
- assert.match(explainGoogleError(403,{error:{message:"API key referrer restrictions"}}),/API restrictions/i);
- assert.equal(recommendedModels(["gemini-3.8-flash","gemini-3.1-flash-lite"])[0],"gemini-3.1-flash-lite");
-});
-
-test("AI provider selection is backwards compatible and does not require DB migration", async () => {
- const { toStoredModel, providerFromStoredModel, modelFromStoredModel, GROQ_DEFAULT_MODEL } =
-   await import("../src/lib/ai-providers.ts");
- assert.equal(toStoredModel("gemini","gemini-3.5-flash-lite"), "gemini-3.5-flash-lite");
- assert.equal(providerFromStoredModel("gemini-2.5-flash"),"gemini");
- assert.equal(toStoredModel("groq", GROQ_DEFAULT_MODEL),"groq:openai/gpt-oss-20b");
- assert.equal(modelFromStoredModel("groq:openai/gpt-oss-20b"), GROQ_DEFAULT_MODEL);
- assert.equal(providerFromStoredModel("groq:openai/gpt-oss-20b"),"groq");
- assert.throws(()=>toStoredModel("groq","unsupported"));
+test("TKA Pro only accepts Groq configuration, including old account migration", async () => {
+  const { toStoredModel, modelFromStoredModel, GROQ_DEFAULT_MODEL } =
+    await import("../src/lib/ai-providers.ts");
+  assert.equal(toStoredModel(GROQ_DEFAULT_MODEL), "groq:openai/gpt-oss-20b");
+  assert.equal(modelFromStoredModel("groq:openai/gpt-oss-20b"), GROQ_DEFAULT_MODEL);
+  assert.throws(() => modelFromStoredModel("gemini-2.5-flash"), /Pengaturan AI lama/);
+  assert.throws(() => toStoredModel("unsupported"));
 });
 test("Groq chat sends JSON questions safely and returns model reply", async () => {
  const { groqChat, describeGroqError } = await import("../src/lib/ai-providers.ts");
@@ -177,3 +157,4 @@ test("Groq returns clear invalid-credentials errors without leaking key", async 
    /API key Groq tidak valid/,
  );
 });
+

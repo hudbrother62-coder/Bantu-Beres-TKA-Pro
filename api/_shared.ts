@@ -1,6 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { explainGoogleError } from "../src/lib/gemini-errors.js";
 export type Request = {
   method?: string;
   headers: Record<string, string | string[] | undefined>;
@@ -67,29 +66,6 @@ export async function action(
 export function errorMessage(e: unknown) {
   return e instanceof Error ? e.message : "Layanan mengalami kendala.";
 }
-export async function gemini(key: string, model: string, body: unknown) {
-  if (!/^gemini-[a-zA-Z0-9.-]{1,80}$/.test(model))
-    throw new Error("Nama model Gemini tidak valid.");
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(55000),
-    },
-  );
-  const result = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(explainGoogleError(r.status, result, model));
-  const text = result.candidates?.[0]?.content?.parts
-    ?.filter((p: { thought?: boolean }) => !p.thought)
-    .map((p: { text?: string }) => p.text || "")
-    .join("");
-  if (!text)
-    throw new Error("AI tidak menghasilkan jawaban. Coba ubah permintaan.");
-  return text as string;
-}
-
 export async function aiConfig(
   db: Awaited<ReturnType<typeof authorized>>,
   payload: Record<string, unknown>,

@@ -10,8 +10,7 @@ import { api, rpc, type Profile } from "../lib/db";
 import { Field, ErrorBox, useWork, useNotice } from "./ui";
 import { SubjectPicker, TeacherSubjects } from "./SubjectPicker";
 import { normalizeSubjectList, profileSubjects } from "../lib/subjects";
-import { recommendedModels } from "../lib/gemini-errors";
-import { type AiProvider, GROQ_MODELS, GROQ_DEFAULT_MODEL, providerFromStoredModel, modelFromStoredModel } from "../lib/ai-providers";
+import { GROQ_MODELS, GROQ_DEFAULT_MODEL, modelFromStoredModel } from "../lib/ai-providers";
 export function SettingsPage({
   profile,
   onProfile,
@@ -20,13 +19,11 @@ export function SettingsPage({
   onProfile: (p: Profile) => void;
 }) {
   const [installed, setInstalled] = useState(false),
-    [provider, setProvider] = useState<AiProvider>("gemini"),
-    [model, setModel] = useState("gemini-3.5-flash-lite"),
+    [model, setModel] = useState<string>(GROQ_DEFAULT_MODEL),
     [direction, setDirection] = useState(
       "Jelas, terstruktur, dan sesuai jenjang siswa.",
     ),
     [apiKey, setApiKey] = useState(""),
-    [availableModels, setAvailableModels] = useState<string[]>([]),
     [modelLoading, setModelLoading] = useState(false),
     [modelNotice, setModelNotice] = useState(""),
     [connectError, setConnectError] = useState(""),
@@ -39,10 +36,17 @@ export function SettingsPage({
       { action: "ai_status" },
     )
       .then((s) => {
-        setInstalled(s.installed);
-        if (s.installed) {
-          setProvider(providerFromStoredModel(s.model));
-          setModel(modelFromStoredModel(s.model));
+        const configured = s.installed && s.model.startsWith("groq:");
+        setInstalled(configured);
+        if (configured) {
+          try {
+            setModel(modelFromStoredModel(s.model));
+          } catch {
+            setModel(GROQ_DEFAULT_MODEL);
+            setInstalled(false);
+          }
+        } else if (s.installed) {
+          setModelNotice("Pengaturan AI lama tidak digunakan lagi. Pasang API key GroqCloud untuk mengaktifkan AI.");
         }
         setDirection(s.direction);
       })
@@ -120,85 +124,55 @@ export function SettingsPage({
         </section>
         <section className="panel">
           <div className="section-heading">
-            <h2>
-              <KeyRound size={20} />
-              Pengaturan AI
-            </h2>
+            <h2><KeyRound size={20} /> Pengaturan Groq AI</h2>
             <span className={"badge " + (installed ? "green" : "")}>
               {installed ? "Terpasang" : "Belum terpasang"}
             </span>
           </div>
           <ErrorBox error={error} />
-          <p>
-            Pilih penyedia AI. Jika Gemini ditolak Google (403), gunakan GroqCloud
-            dengan API key milik Anda. Groq menyediakan kuota gratis terbatas.
+          <p className="muted">
+            TKA Pro menggunakan GroqCloud untuk generator soal, bahan ajar, dan asisten belajar.
+            Anda dapat membuat API key melalui akun GroqCloud dengan kuota gratis terbatas.
           </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void run(async () => {
-                setConnectError("");
-                try {
-                  const r = await api("settings", { provider, apiKey, model: model.trim(), direction });
-                  setApiKey("");
-                  setInstalled(true);
-                  setModelNotice(provider === "groq" ? "Model Groq teruji dan tersimpan. Generator kini memakai Groq." : "Model Gemini teruji dan tersimpan.");
-                  notice(r.message);
-                } catch (cause) {
-                  setConnectError(cause instanceof Error ? cause.message : "Koneksi Gemini gagal.");
-                  throw cause;
-                }
-              });
-            }}
-          >
-            <Field label="Penyedia AI">
-              <select value={provider} onChange={e => {
-                const next = e.target.value as AiProvider;
-                setProvider(next);
-                setModel(next === "groq" ? GROQ_DEFAULT_MODEL : "gemini-3.5-flash-lite");
-                setAvailableModels([]);
+          <div className="groq-setup-guide">
+            <h3>Cara memasang API key Groq</h3>
+            <ol>
+              <li>Buka <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">GroqCloud API Keys <ExternalLink size={13} /></a> lalu daftar atau login.</li>
+              <li>Pada halaman API Keys pilih <strong>Create API Key</strong>.</li>
+              <li>Beri nama, misalnya <strong>TKA Pro</strong>, lalu buat key baru.</li>
+              <li>Salin key yang muncul (biasanya diawali <code>gsk_</code>). Simpan dengan aman, jangan kirim ke chat.</li>
+              <li>Tempel key ke kolom di bawah, pilih model, kemudian klik <strong>Cari &amp; uji model otomatis</strong>.</li>
+              <li>Jika uji berhasil, klik <strong>Tes koneksi &amp; simpan</strong>. Setelah itu gunakan Generator &amp; Asisten AI.</li>
+            </ol>
+            <a className="groq-setup-link" href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={16} /> Buka GroqCloud — Buat API Key
+            </a>
+          </div>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            void run(async () => {
+              setConnectError("");
+              try {
+                const result = await api("settings", { apiKey, model, direction });
                 setApiKey("");
-                setModelNotice("");
-                setConnectError("");
-              }}>
-                <option value="gemini">Google Gemini · memerlukan akses project Google</option>
-                <option value="groq">GroqCloud · tersedia paket gratis</option>
-              </select>
-            </Field>
-            <Field
-              label={
-                installed
-                  ? "API key penyedia terpilih (masukkan ulang untuk mengganti)"
-                  : provider === "groq" ? "API key GroqCloud" : "API key Gemini"
+                setInstalled(true);
+                setModelNotice("Groq berhasil diuji dan disimpan. Generator AI siap digunakan.");
+                notice(result.message);
+              } catch (cause) {
+                setConnectError(cause instanceof Error ? cause.message : "Tes koneksi Groq gagal.");
+                throw cause;
               }
-            >
-              <input
-                type="password"
-                autoComplete="off"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                required
-                placeholder="API key tidak ditampilkan kembali"
-              />
+            });
+          }}>
+            <Field label={installed ? "API key GroqCloud (isi kembali untuk mengganti)" : "API key GroqCloud"}>
+              <input type="password" autoComplete="new-password" value={apiKey}
+                onChange={e => { setApiKey(e.target.value); setConnectError(""); }}
+                required placeholder="Tempel API key Groq (gsk_...)" />
             </Field>
-            <Field label="Model">
-              {provider === "groq" ? (
-                <select value={model} onChange={e => setModel(e.target.value)}>
-                  {GROQ_MODELS.map(id => <option key={id} value={id}>{id}</option>)}
-                </select>
-              ) : (
-                <>
-                  <input list="tka-gemini-model-choices" value={model}
-                    onChange={e => { setModel(e.target.value); setModelNotice(""); }}
-                    required placeholder="Pilih ID model Gemini" />
-                  <datalist id="tka-gemini-model-choices">
-                    {recommendedModels([
-                      ...availableModels, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
-                      "gemini-2.5-flash-lite", "gemini-3.8-flash",
-                    ]).map(id => <option value={id} key={id} />)}
-                  </datalist>
-                </>
-              )}
+            <Field label="Model Groq">
+              <select value={model} onChange={e => { setModel(e.target.value); setModelNotice(""); }}>
+                {GROQ_MODELS.map(id => <option key={id} value={id}>{id}</option>)}
+              </select>
               <div className="model-lookup-row">
                 <button type="button" disabled={modelLoading || busy || apiKey.trim().length < 20}
                   onClick={async () => {
@@ -206,78 +180,50 @@ export function SettingsPage({
                     setConnectError("");
                     setModelNotice("");
                     try {
-                      const response = await api("settings", { provider, apiKey, autoDetect: true });
-                      const found = response.models as string[];
-                      setAvailableModels(found);
+                      const response = await api("settings", { apiKey, autoDetect: true });
                       setModel(response.model as string);
                       setModelNotice(response.message);
                     } catch (cause) {
-                      setConnectError(cause instanceof Error ? cause.message : "Daftar model gagal dimuat.");
+                      setConnectError(cause instanceof Error ? cause.message : "Tidak ada model Groq yang berhasil diuji.");
                     } finally {
                       setModelLoading(false);
                     }
                   }}>
-                  {modelLoading ? "Menguji beberapa model…" : "Cari & uji model otomatis"}
+                  {modelLoading ? "Menguji model…" : "Cari & uji model otomatis"}
                 </button>
               </div>
               {modelNotice && <small className="muted" role="status">{modelNotice}</small>}
-              <small className="muted">
-                {provider === "groq"
-                  ? "Aplikasi menguji model Groq dengan permintaan nyata. Kuota gratis tergantung ketentuan Groq; mode ini mendukung teks, bukan gambar atau PDF."
-                  : "Aplikasi mencoba beberapa model Gemini ringan lebih dahulu. Jika semuanya ditolak 403, pilih GroqCloud."}
-                Setelah satu model berhasil diuji, klik Tes koneksi &amp; simpan.
-              </small>
+              <small className="muted">Gunakan key GroqCloud, bukan Google AI Studio. Kuota gratis memiliki batas permintaan. Model yang tersedia mendukung teks, bukan unggahan gambar/PDF.</small>
             </Field>
             {connectError && <div className="alert error" role="alert">{connectError}</div>}
             <Field label="Arah jawaban AI">
-              <textarea
-                value={direction}
-                onChange={(e) => setDirection(e.target.value)}
-                rows={5}
-                maxLength={1000}
-                placeholder="Contoh: jelaskan bertahap, gunakan contoh sehari-hari, dan tutup dengan tiga latihan."
-              />
+              <textarea value={direction} onChange={e => setDirection(e.target.value)}
+                rows={5} maxLength={1000}
+                placeholder="Contoh: Jelaskan bertahap, beri contoh nyata dan pembahasan lengkap." />
             </Field>
-            <button className="primary" disabled={busy || !apiKey}>
+            <button className="primary" disabled={busy || modelLoading || !apiKey}>
               {busy ? "Menguji koneksi…" : "Tes koneksi & simpan"}
             </button>
           </form>
           <div className="security-note">
             <ShieldCheck size={18} />
-            <small>
-              Key disimpan terenkripsi di server, tidak dimasukkan ke ekspor
-              atau dibagikan ke siswa.
-            </small>
+            <small>Key tersimpan terenkripsi di server; tidak dimasukkan ke ekspor atau dibagikan ke siswa.</small>
           </div>
           {installed && (
-            <button
-              className="danger"
-              disabled={busy}
+            <button className="danger" disabled={busy}
               onClick={() => {
-                if (
-                  confirm(
-                    "Hapus API key? Fitur AI pribadi dan AI project Anda akan berhenti sampai dipasang kembali.",
-                  )
-                )
+                if (confirm("Hapus API key? Generator AI pribadi dan project akan berhenti sampai dipasang kembali.")) {
                   void run(async () => {
                     await api("settings", { remove: true });
                     setInstalled(false);
-                    notice("API key dihapus.");
+                    setModelNotice("");
+                    notice("API key Groq dihapus.");
                   });
-              }}
-            >
+                }
+              }}>
               Hapus API key
             </button>
           )}
-          <a
-            className="link"
-            href={provider === "groq" ? "https://console.groq.com/keys" : "https://aistudio.google.com/apikey"}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {provider === "groq" ? "Buat API key gratis di GroqCloud" : "Buka Google AI Studio"}
-            <ExternalLink size={15} />
-          </a>
         </section>
       </div>
       <section className="panel">
@@ -306,7 +252,7 @@ export function Guide({ profile }: { profile: Profile }) {
         ],
         [
           "Pasang AI pribadi",
-          "Buka Google AI Studio, buat API key, lalu salin ke Pengaturan AI. Isi nama model yang tersedia pada akun Anda. Pilih Tes koneksi & simpan. Jangan bagikan key ke siswa.",
+          "Buka https://console.groq.com/keys, login, pilih Create API Key, beri nama TKA Pro, lalu salin key gsk_ ke Pengaturan Groq AI. Pilih model, uji koneksi dan simpan. Jangan bagikan key ke siswa.",
         ],
         [
           "Buat project",
@@ -381,7 +327,7 @@ export function Guide({ profile }: { profile: Profile }) {
         <details>
           <summary>AI tidak memberikan jawaban</summary>
           <p>
-            Periksa key dan nama model, kuota Google, serta koneksi. Untuk AI
+            Periksa API key GroqCloud, pilihan model, batas kuota Groq serta koneksi. Untuk AI
             project, pastikan guru mengaktifkannya. AI project ditutup selama
             tryout. Kurangi panjang permintaan jika keluaran terpotong.
           </p>
