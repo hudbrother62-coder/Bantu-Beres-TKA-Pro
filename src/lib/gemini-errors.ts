@@ -20,7 +20,7 @@ export function explainGoogleError(status:number, raw:unknown, model="Gemini"):s
      return "Google memblokir akses project/API key ini (403). Periksa pemberitahuan atau peninjauan di Google Cloud Console."; 
    if (/referer|referrer|api key restriction|ips? not allowed|permission|not permitted/i.test(msg))
      return "Google menolak izin API key (403). Periksa API restrictions, Application restrictions dan Gemini API di Google Cloud Console.";
-   return "Google menolak akses (403). Model yang muncul di daftar belum tentu bisa generate; periksa izin API key, pembatasan project, atau akses dari server hosting.";
+   return "Akses Gemini ditolak Google (403). Model yang muncul di daftar belum tentu bisa generate; periksa izin API key, pembatasan project, atau akses dari server hosting.";
  }
  if (status===400)
    return "Google menolak format permintaan (400). Periksa parameter dan kesesuaian model. Belum tentu API key salah.";
