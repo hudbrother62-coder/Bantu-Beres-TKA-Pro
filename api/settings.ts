@@ -38,7 +38,7 @@ export default async function handler(req: Request, res: Response) {
       if (!response.ok) throw new Error(explainGoogleError(response.status, result));
       const models = recommendedModels((result.models || [])
         .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
-        .map(m => String(m.name || "").replace(/^models\\//, "")));
+        .map(m => String(m.name || "").replace("models/", "")));
       if (!models.length)
         throw new Error("Tidak ada model teks generateContent yang tersedia untuk API key ini.");
       if (req.body.autoDetect === true) {
