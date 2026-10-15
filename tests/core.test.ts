@@ -127,5 +127,12 @@ test("Google Gemini errors are specific and models are sorted", async () => {
   assert.match(explainGoogleError(404, {error:{status:"NOT_FOUND"}},"gemini-3.8-flash"), /3.8-flash/i);
   assert.match(explainGoogleError(429, {error:{status:"RESOURCE_EXHAUSTED"}}), /Kuota/i);
   assert.deepEqual(recommendedModels(["gemini-3.5-flash-lite","gemini-3.8-flash","gemini-3.8-flash","gemini-3.8-live"]),
-    ["gemini-3.8-flash","gemini-3.5-flash-lite"]);
+    ["gemini-3.5-flash-lite","gemini-3.8-flash"]);
+});
+
+test("403 Google Gemini project restrictions are distinct from unavailable models", async () => {
+ const { explainGoogleError, recommendedModels } = await import("../src/lib/gemini-errors.ts");
+ assert.match(explainGoogleError(403,{error:{message:"Your project has been denied access"}}),/memblokir akses project/i);
+ assert.match(explainGoogleError(403,{error:{message:"API key referrer restrictions"}}),/API restrictions/i);
+ assert.equal(recommendedModels(["gemini-3.8-flash","gemini-3.1-flash-lite"])[0],"gemini-3.1-flash-lite");
 });

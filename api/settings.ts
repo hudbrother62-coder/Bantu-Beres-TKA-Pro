@@ -1,4 +1,5 @@
 import { recommendedModels, explainGoogleError } from "../src/lib/gemini-errors.js";
+export const config = { maxDuration: 60 };
 import {
   authorized,
   action,
@@ -22,14 +23,14 @@ export default async function handler(req: Request, res: Response) {
       return;
     }
     const apiKey = String(req.body.apiKey || "").trim();
-    const model = String(req.body.model || "gemini-3.8-flash").trim();
+    const model = String(req.body.model || "gemini-3.5-flash-lite").trim();
     if (apiKey.length < 20 || apiKey.length > 250)
       throw new Error("API key Gemini harus diambil dari Google AI Studio.");
-    if (req.body.listModels === true) {
+    if (req.body.listModels === true || req.body.autoDetect === true) {
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100", {
         method: "GET",
         headers: { "x-goog-api-key": apiKey },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(12000),
       });
       const result = await response.json().catch(() => ({})) as {
         models?: { name?: string; supportedGenerationMethods?: string[] }[];
@@ -37,12 +38,56 @@ export default async function handler(req: Request, res: Response) {
       if (!response.ok) throw new Error(explainGoogleError(response.status, result));
       const models = recommendedModels((result.models || [])
         .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
-        .map(m => String(m.name || "").replace(/^models\//, "")));
+        .map(m => String(m.name || "").replace(/^models\\//, "")));
       if (!models.length)
-        throw new Error("Google menerima key, tetapi tidak mengembalikan model generateContent yang cocok.");
+        throw new Error("Tidak ada model teks generateContent yang tersedia untuk API key ini.");
+      if (req.body.autoDetect === true) {
+        // Real generate requests are required: listModels alone does not prove permission.
+        // Limit cost and latency: probe at most four models, one tiny prompt each.
+        const failures: string[] = [];
+        const candidates = models.slice(0, 4);
+        for (const candidate of candidates) {
+          try {
+            const probe = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate)}:generateContent`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+                body: JSON.stringify({
+                  contents: [{ role: "user", parts: [{text:"Jawab satu kata: OK"}] }],
+                  generationConfig: { maxOutputTokens: 384 },
+                }),
+                signal: AbortSignal.timeout(8500),
+              },
+            );
+            const responseBody = await probe.json().catch(() => ({}));
+            if (!probe.ok) {
+              failures.push(candidate + ": " + explainGoogleError(probe.status, responseBody, candidate));
+              continue;
+            }
+            const text = responseBody?.candidates?.[0]?.content?.parts
+              ?.map((p: { text?: string }) => p.text || "").join("").trim();
+            if (!text) {
+              failures.push(candidate + ": respons kosong dari Google");
+              continue;
+            }
+            res.status(200).json({
+              models, model: candidate,
+              message: "Model " + candidate + " berhasil diuji melalui generateContent. Klik Tes koneksi & simpan untuk menyimpan key terenkripsi.",
+            });
+            return;
+          } catch {
+            failures.push(candidate + ": permintaan tidak selesai tepat waktu");
+          }
+        }
+        const forbidden = failures.filter(f => f.includes("(403)"));
+        throw new Error(forbidden.length === candidates.length
+          ? "Semua model yang diuji ditolak Google (403), termasuk model ringan. Periksa izin dan pembatasan API key atau project Google; mengganti model saja tidak cukup."
+          : "Tidak ada model yang berhasil diuji. " + failures.slice(0, 2).join("; ").slice(0, 380));
+      }
       res.status(200).json({
         models,
-        message: "Daftar model tersedia ditemukan. Pilih model, kemudian tes generate untuk memastikan izin.",
+        message: "Daftar model ditemukan. Pilih model, kemudian tes koneksi untuk memastikan izin.",
       });
       return;
     }

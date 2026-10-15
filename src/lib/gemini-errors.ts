@@ -15,8 +15,13 @@ export function explainGoogleError(status:number, raw:unknown, model="Gemini"):s
    return "Kuota Gemini tercapai (429). Periksa batas penggunaan di Google AI Studio dan coba lagi nanti.";
  if (status===404)
    return "Model "+model+" tidak tersedia untuk API key ini (404). Cari dan pilih model lain.";
- if (status===403)
-   return "Akses Gemini ditolak Google (403). Periksa izin API key, pembatasan Gemini API, dan akses project Google.";
+ if (status===403) {
+   if (/denied access|project.*blocked|project.*suspend/i.test(msg))
+     return "Google memblokir akses project/API key ini (403). Periksa pemberitahuan atau peninjauan di Google Cloud Console."; 
+   if (/referer|referrer|api key restriction|ips? not allowed|permission|not permitted/i.test(msg))
+     return "Google menolak izin API key (403). Periksa API restrictions, Application restrictions dan Gemini API di Google Cloud Console.";
+   return "Google menolak akses (403). Model yang muncul di daftar belum tentu bisa generate; periksa izin API key, pembatasan project, atau akses dari server hosting.";
+ }
  if (status===400)
    return "Google menolak format permintaan (400). Periksa parameter dan kesesuaian model. Belum tentu API key salah.";
  if (status===401)
@@ -25,7 +30,7 @@ export function explainGoogleError(status:number, raw:unknown, model="Gemini"):s
  return "Gemini gagal (HTTP "+status+"). Periksa model, izin dan kuota di Google AI Studio.";
 }
 export function recommendedModels(models:string[]):string[] {
- const rank=["gemini-3.8-flash","gemini-3.6-flash","gemini-3.5-flash-lite","gemini-3.1-flash-lite","gemini-2.5-flash-lite","gemini-2.5-flash","gemini-3-flash-preview"];
+ const rank=["gemini-3.5-flash-lite","gemini-3.1-flash-lite","gemini-2.5-flash-lite","gemini-3.8-flash","gemini-3.6-flash","gemini-2.5-flash","gemini-3-flash-preview"];
  return [...new Set(models.filter(m=>/^gemini-[a-z0-9.-]{2,80}$/.test(m)
   && !/(image|embedding|live|tts|audio|transcribe)/i.test(m)))]
   .sort((a,b)=>(rank.indexOf(a)===-1?100:rank.indexOf(a))-(rank.indexOf(b)===-1?100:rank.indexOf(b))||a.localeCompare(b));

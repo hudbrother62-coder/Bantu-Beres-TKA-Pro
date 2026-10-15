@@ -19,7 +19,7 @@ export function SettingsPage({
   onProfile: (p: Profile) => void;
 }) {
   const [installed, setInstalled] = useState(false),
-    [model, setModel] = useState("gemini-3.8-flash"),
+    [model, setModel] = useState("gemini-3.5-flash-lite"),
     [direction, setDirection] = useState(
       "Jelas, terstruktur, dan sesuai jenjang siswa.",
     ),
@@ -125,8 +125,9 @@ export function SettingsPage({
           </div>
           <ErrorBox error={error} />
           <p>
-            Gunakan API key Gemini dari Google AI Studio, lalu cari model yang
-            diizinkan project Google Anda. Kuota dan biaya mengikuti akun Google.
+            Gunakan API key Gemini dari Google AI Studio. Model ringan diprioritaskan;
+            pengujian otomatis akan memilih model yang benar-benar bisa generate.
+            Kuota dan biaya mengikuti akun Google.
           </p>
           <form
             onSubmit={(e) => {
@@ -167,8 +168,8 @@ export function SettingsPage({
                 required placeholder="Pilih ID model Gemini" />
               <datalist id="tka-gemini-model-choices">
                 {recommendedModels([
-                  ...availableModels, "gemini-3.8-flash", "gemini-3.6-flash",
-                  "gemini-3.5-flash-lite", "gemini-2.5-flash",
+                  ...availableModels, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+                  "gemini-2.5-flash-lite", "gemini-3.8-flash",
                 ]).map(id => <option value={id} key={id} />)}
               </datalist>
               <div className="model-lookup-row">
@@ -178,10 +179,10 @@ export function SettingsPage({
                     setConnectError("");
                     setModelNotice("");
                     try {
-                      const response = await api("settings", { apiKey, listModels: true });
+                      const response = await api("settings", { apiKey, autoDetect: true });
                       const found = response.models as string[];
                       setAvailableModels(found);
-                      if (!found.includes(model)) setModel(found[0]);
+                      setModel(response.model as string);
                       setModelNotice(response.message);
                     } catch (cause) {
                       setConnectError(cause instanceof Error ? cause.message : "Daftar model gagal dimuat.");
@@ -189,13 +190,13 @@ export function SettingsPage({
                       setModelLoading(false);
                     }
                   }}>
-                  {modelLoading ? "Memeriksa model…" : "Cari model dari API key"}
+                  {modelLoading ? "Menguji beberapa model…" : "Cari & uji model otomatis"}
                 </button>
               </div>
               {modelNotice && <small className="muted" role="status">{modelNotice}</small>}
               <small className="muted">
-                Model yang tampil belum tentu memiliki kuota aktif.
-                Gunakan Tes koneksi &amp; simpan untuk memastikan akses.
+                Aplikasi mencoba beberapa model ringan lebih dahulu. Setelah satu model berhasil diuji,
+                klik Tes koneksi &amp; simpan untuk menyimpan konfigurasi.
               </small>
             </Field>
             {connectError && <div className="alert error" role="alert">{connectError}</div>}
