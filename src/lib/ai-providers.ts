@@ -1,22 +1,18 @@
-export type AiProvider = "gemini" | "groq";
 export const GROQ_MODELS = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"] as const;
 export const GROQ_DEFAULT_MODEL = GROQ_MODELS[0];
 
-export function providerFromStoredModel(stored: string): AiProvider {
-  return stored.startsWith("groq:") ? "groq" : "gemini";
+export function toStoredModel(model: string): string {
+  if (!(GROQ_MODELS as readonly string[]).includes(model))
+    throw new Error("Model Groq tidak didukung untuk TKA Pro.");
+  return "groq:" + model;
 }
 export function modelFromStoredModel(stored: string): string {
-  return stored.startsWith("groq:") ? stored.slice(5) : stored;
-}
-export function toStoredModel(provider: AiProvider, model: string): string {
-  if (provider === "gemini") {
-    if (!/^gemini-[a-z0-9.-]{2,80}$/.test(model)) throw new Error("Nama model Gemini tidak valid.");
-    return model;
-  }
-  if (!(GROQ_MODELS as readonly string[]).includes(model)) {
-    throw new Error("Model Groq tidak didukung untuk TKA Pro.");
-  }
-  return "groq:" + model;
+  if (!stored.startsWith("groq:"))
+    throw new Error("Pengaturan AI lama tidak didukung. Pasang API key GroqCloud melalui Pengaturan AI.");
+  const model = stored.slice("groq:".length);
+  if (!(GROQ_MODELS as readonly string[]).includes(model))
+    throw new Error("Model Groq tidak tersedia. Pilih model lain pada Pengaturan AI.");
+  return model;
 }
 export function describeGroqError(status: number, body: unknown): string {
   const payload = body && typeof body === "object" && "error" in body
