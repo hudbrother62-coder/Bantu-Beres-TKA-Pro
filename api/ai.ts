@@ -9,6 +9,7 @@ import {
   type Response,
 } from "./_shared.js";
 import { buildSystemPrompt, validateGeneratedQuestions } from "../src/lib/core.js";
+import { groqChat, modelFromStoredModel, providerFromStoredModel } from "../src/lib/ai-providers.js";
 export const config = { maxDuration: 60 };
 export default async function handler(req: Request, res: Response) {
   res.setHeader("Cache-Control", "no-store");
@@ -101,7 +102,15 @@ export default async function handler(req: Request, res: Response) {
           : {}),
       },
     };
-    const text = await gemini(apiKey, cfg.model, body);
+    const provider = providerFromStoredModel(String(cfg.model));
+    const model = modelFromStoredModel(String(cfg.model));
+    if (provider === "groq" && attachment) {
+      throw new Error("Model Groq gratis yang dipilih mendukung teks saja. Hapus lampiran gambar/PDF atau salin isinya ke kolom dokumen sumber.");
+    }
+    const text = provider === "groq"
+      ? await groqChat(apiKey, model, instruction,
+          messages.slice(-12).map(m => ({role:m.role,content:m.content})), mode === "questions")
+      : await gemini(apiKey, model, body);
     if (mode === "questions") {
       let parsed;
       try {

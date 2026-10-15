@@ -136,3 +136,44 @@ test("403 Google Gemini project restrictions are distinct from unavailable model
  assert.match(explainGoogleError(403,{error:{message:"API key referrer restrictions"}}),/API restrictions/i);
  assert.equal(recommendedModels(["gemini-3.8-flash","gemini-3.1-flash-lite"])[0],"gemini-3.1-flash-lite");
 });
+
+test("AI provider selection is backwards compatible and does not require DB migration", async () => {
+ const { toStoredModel, providerFromStoredModel, modelFromStoredModel, GROQ_DEFAULT_MODEL } =
+   await import("../src/lib/ai-providers.ts");
+ assert.equal(toStoredModel("gemini","gemini-3.5-flash-lite"), "gemini-3.5-flash-lite");
+ assert.equal(providerFromStoredModel("gemini-2.5-flash"),"gemini");
+ assert.equal(toStoredModel("groq", GROQ_DEFAULT_MODEL),"groq:openai/gpt-oss-20b");
+ assert.equal(modelFromStoredModel("groq:openai/gpt-oss-20b"), GROQ_DEFAULT_MODEL);
+ assert.equal(providerFromStoredModel("groq:openai/gpt-oss-20b"),"groq");
+ assert.throws(()=>toStoredModel("groq","unsupported"));
+});
+test("Groq chat sends JSON questions safely and returns model reply", async () => {
+ const { groqChat, describeGroqError } = await import("../src/lib/ai-providers.ts");
+ let calls = 0;
+ const mockFetch = (async (input: RequestInfo|URL, init?:RequestInit) => {
+  calls++;
+  assert.equal(String(input),"https://api.groq.com/openai/v1/chat/completions");
+  assert.equal(init?.method,"POST");
+  assert.equal((init?.headers as Record<string,string>).Authorization,"Bearer dummy-test-key");
+  const request = JSON.parse(String(init?.body));
+  assert.equal(request.model,"openai/gpt-oss-20b");
+  assert.equal(request.messages[0].role,"system");
+  assert.equal(request.messages[1].content,"Buat 1 soal.");
+  assert.equal(request.response_format.type,"json_object");
+  return new Response(JSON.stringify({choices:[{message:{content:'{"questions":[{"question":"Contoh"}]}'}}]}),{status:200});
+ }) as typeof fetch;
+ const output = await groqChat("dummy-test-key","openai/gpt-oss-20b",
+   "Jawab JSON saja",[{role:"user",content:"Buat 1 soal."}],true,mockFetch);
+ assert.equal(calls,1);
+ assert.match(output,/questions/);
+ assert.match(describeGroqError(429,{}),/Kuota gratis/);
+});
+test("Groq returns clear invalid-credentials errors without leaking key", async () => {
+ const { groqChat } = await import("../src/lib/ai-providers.ts");
+ const mockFetch = (async () =>
+   new Response(JSON.stringify({error:{message:"Invalid API Key"}}),{status:401})) as typeof fetch;
+ await assert.rejects(
+   groqChat("do-not-log-secret","openai/gpt-oss-20b","test",[{role:"user",content:"tes"}],false,mockFetch),
+   /API key Groq tidak valid/,
+ );
+});

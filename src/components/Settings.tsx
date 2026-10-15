@@ -11,6 +11,7 @@ import { Field, ErrorBox, useWork, useNotice } from "./ui";
 import { SubjectPicker, TeacherSubjects } from "./SubjectPicker";
 import { normalizeSubjectList, profileSubjects } from "../lib/subjects";
 import { recommendedModels } from "../lib/gemini-errors";
+import { type AiProvider, GROQ_MODELS, GROQ_DEFAULT_MODEL, providerFromStoredModel, modelFromStoredModel } from "../lib/ai-providers";
 export function SettingsPage({
   profile,
   onProfile,
@@ -19,6 +20,7 @@ export function SettingsPage({
   onProfile: (p: Profile) => void;
 }) {
   const [installed, setInstalled] = useState(false),
+    [provider, setProvider] = useState<AiProvider>("gemini"),
     [model, setModel] = useState("gemini-3.5-flash-lite"),
     [direction, setDirection] = useState(
       "Jelas, terstruktur, dan sesuai jenjang siswa.",
@@ -38,7 +40,10 @@ export function SettingsPage({
     )
       .then((s) => {
         setInstalled(s.installed);
-        if (s.installed) setModel(s.model);
+        if (s.installed) {
+          setProvider(providerFromStoredModel(s.model));
+          setModel(modelFromStoredModel(s.model));
+        }
         setDirection(s.direction);
       })
       .catch((e) => setError(e.message));
@@ -125,9 +130,8 @@ export function SettingsPage({
           </div>
           <ErrorBox error={error} />
           <p>
-            Gunakan API key Gemini dari Google AI Studio. Model ringan diprioritaskan;
-            pengujian otomatis akan memilih model yang benar-benar bisa generate.
-            Kuota dan biaya mengikuti akun Google.
+            Pilih penyedia AI. Jika Gemini ditolak Google (403), gunakan GroqCloud
+            dengan API key milik Anda. Groq menyediakan kuota gratis terbatas.
           </p>
           <form
             onSubmit={(e) => {
@@ -135,9 +139,10 @@ export function SettingsPage({
               void run(async () => {
                 setConnectError("");
                 try {
-                  const r = await api("settings", { apiKey, model: model.trim(), direction });
+                  const r = await api("settings", { provider, apiKey, model: model.trim(), direction });
                   setApiKey("");
                   setInstalled(true);
+                  setModelNotice(provider === "groq" ? "Model Groq teruji dan tersimpan. Generator kini memakai Groq." : "Model Gemini teruji dan tersimpan.");
                   notice(r.message);
                 } catch (cause) {
                   setConnectError(cause instanceof Error ? cause.message : "Koneksi Gemini gagal.");
@@ -146,11 +151,25 @@ export function SettingsPage({
               });
             }}
           >
+            <Field label="Penyedia AI">
+              <select value={provider} onChange={e => {
+                const next = e.target.value as AiProvider;
+                setProvider(next);
+                setModel(next === "groq" ? GROQ_DEFAULT_MODEL : "gemini-3.5-flash-lite");
+                setAvailableModels([]);
+                setApiKey("");
+                setModelNotice("");
+                setConnectError("");
+              }}>
+                <option value="gemini">Google Gemini · memerlukan akses project Google</option>
+                <option value="groq">GroqCloud · tersedia paket gratis</option>
+              </select>
+            </Field>
             <Field
               label={
                 installed
-                  ? "API key (masukkan ulang untuk mengganti pengaturan)"
-                  : "API key Gemini"
+                  ? "API key penyedia terpilih (masukkan ulang untuk mengganti)"
+                  : provider === "groq" ? "API key GroqCloud" : "API key Gemini"
               }
             >
               <input
@@ -163,15 +182,23 @@ export function SettingsPage({
               />
             </Field>
             <Field label="Model">
-              <input list="tka-gemini-model-choices" value={model}
-                onChange={e => { setModel(e.target.value); setModelNotice(""); }}
-                required placeholder="Pilih ID model Gemini" />
-              <datalist id="tka-gemini-model-choices">
-                {recommendedModels([
-                  ...availableModels, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
-                  "gemini-2.5-flash-lite", "gemini-3.8-flash",
-                ]).map(id => <option value={id} key={id} />)}
-              </datalist>
+              {provider === "groq" ? (
+                <select value={model} onChange={e => setModel(e.target.value)}>
+                  {GROQ_MODELS.map(id => <option key={id} value={id}>{id}</option>)}
+                </select>
+              ) : (
+                <>
+                  <input list="tka-gemini-model-choices" value={model}
+                    onChange={e => { setModel(e.target.value); setModelNotice(""); }}
+                    required placeholder="Pilih ID model Gemini" />
+                  <datalist id="tka-gemini-model-choices">
+                    {recommendedModels([
+                      ...availableModels, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+                      "gemini-2.5-flash-lite", "gemini-3.8-flash",
+                    ]).map(id => <option value={id} key={id} />)}
+                  </datalist>
+                </>
+              )}
               <div className="model-lookup-row">
                 <button type="button" disabled={modelLoading || busy || apiKey.trim().length < 20}
                   onClick={async () => {
@@ -179,7 +206,7 @@ export function SettingsPage({
                     setConnectError("");
                     setModelNotice("");
                     try {
-                      const response = await api("settings", { apiKey, autoDetect: true });
+                      const response = await api("settings", { provider, apiKey, autoDetect: true });
                       const found = response.models as string[];
                       setAvailableModels(found);
                       setModel(response.model as string);
@@ -195,8 +222,10 @@ export function SettingsPage({
               </div>
               {modelNotice && <small className="muted" role="status">{modelNotice}</small>}
               <small className="muted">
-                Aplikasi mencoba beberapa model ringan lebih dahulu. Setelah satu model berhasil diuji,
-                klik Tes koneksi &amp; simpan untuk menyimpan konfigurasi.
+                {provider === "groq"
+                  ? "Aplikasi menguji model Groq dengan permintaan nyata. Kuota gratis tergantung ketentuan Groq; mode ini mendukung teks, bukan gambar atau PDF."
+                  : "Aplikasi mencoba beberapa model Gemini ringan lebih dahulu. Jika semuanya ditolak 403, pilih GroqCloud."}
+                Setelah satu model berhasil diuji, klik Tes koneksi &amp; simpan.
               </small>
             </Field>
             {connectError && <div className="alert error" role="alert">{connectError}</div>}
@@ -242,11 +271,11 @@ export function SettingsPage({
           )}
           <a
             className="link"
-            href="https://aistudio.google.com/apikey"
+            href={provider === "groq" ? "https://console.groq.com/keys" : "https://aistudio.google.com/apikey"}
             target="_blank"
             rel="noreferrer"
           >
-            Buka Google AI Studio
+            {provider === "groq" ? "Buat API key gratis di GroqCloud" : "Buka Google AI Studio"}
             <ExternalLink size={15} />
           </a>
         </section>
