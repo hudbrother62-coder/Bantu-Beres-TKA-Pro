@@ -159,12 +159,19 @@ test("Groq returns clear invalid-credentials errors without leaking key", async 
 });
 
 
-test("Guide embeds supplied YouTube video and provides accessible fallback link", async () => {
+test("YouTube tutorial is embedded within Groq API settings, not generic usage guide", async () => {
   const { readFileSync } = await import("node:fs");
   const src = readFileSync(new URL("../src/components/Settings.tsx", import.meta.url), "utf8");
-  assert.ok(src.includes("https://www.youtube-nocookie.com/embed/8iHwQ19dIeQ"));
-  assert.ok(src.includes('href="https://youtu.be/8iHwQ19dIeQ"'));
-  assert.ok(src.includes('loading="lazy"'));
-  assert.ok(src.includes("allowFullScreen"));
-  assert.ok(!src.includes("Video demo akan ditambahkan"));
+  const settingsStart = src.indexOf("export function SettingsPage");
+  const guideStart = src.indexOf("export function Guide");
+  const groq = src.slice(settingsStart, guideStart);
+  const guide = src.slice(guideStart);
+  const videoUrl = "https://www.youtube-nocookie.com/embed/8iHwQ19dIeQ";
+  assert.ok(groq.includes("Cara memasang API key Groq"));
+  assert.ok(groq.includes(videoUrl));
+  assert.ok(groq.includes('href="https://youtu.be/8iHwQ19dIeQ"'));
+  assert.ok(groq.includes('loading="lazy"'));
+  assert.ok(groq.includes("allowFullScreen"));
+  assert.ok(groq.indexOf(videoUrl) > groq.indexOf("Cara memasang API key Groq"));
+  assert.ok(!guide.includes(videoUrl));
 });

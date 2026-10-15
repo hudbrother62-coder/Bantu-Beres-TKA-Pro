@@ -147,6 +147,24 @@ export function SettingsPage({
             <a className="groq-setup-link" href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">
               <ExternalLink size={16} /> Buka GroqCloud — Buat API Key
             </a>
+            <div className="groq-video-tutorial" aria-labelledby="groq-video-title">
+              <h3 id="groq-video-title">Video panduan pemasangan API key</h3>
+              <p className="muted">Video YouTube yang disediakan pemilik aplikasi. Tonton di sini atau buka langsung di YouTube.</p>
+              <div className="groq-video-frame">
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/8iHwQ19dIeQ"
+                  title="Video panduan pemasangan API key dari YouTube"
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+              <a className="groq-video-link" href="https://youtu.be/8iHwQ19dIeQ"
+                target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={16} /> Buka video di YouTube
+              </a>
+            </div>
           </div>
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -355,32 +373,6 @@ export function Guide({ profile }: { profile: Profile }) {
             yang perlu diperbaiki.
           </p>
         </details>
-      </section>
-      <section className="panel guide-video-section" aria-labelledby="guide-video-title">
-        <div className="section-heading">
-          <div>
-            <h2 id="guide-video-title">Video panduan</h2>
-            <p className="muted">Tonton video berikut langsung dari aplikasi, atau buka di YouTube.</p>
-          </div>
-        </div>
-        <div className="guide-video-frame">
-          <iframe
-            src="https://www.youtube-nocookie.com/embed/8iHwQ19dIeQ"
-            title="Video panduan TKA Pro dari YouTube"
-            loading="lazy"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-        </div>
-        <a
-          className="guide-video-link"
-          href="https://youtu.be/8iHwQ19dIeQ"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ExternalLink size={16} /> Buka video di YouTube
-        </a>
       </section>
       <div className="alert">
         Hasil dan nilai merupakan latihan internal. Materi AI perlu diperiksa
