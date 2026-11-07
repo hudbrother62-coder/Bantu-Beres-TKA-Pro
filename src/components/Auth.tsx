@@ -229,6 +229,7 @@ export default function Auth({
             <ArrowRight size={18} />
           </button>
         </form>
+        {mode === "login" && <p className="muted center"><a href="/recovery.html">Lupa password? Gunakan kode pemulihan</a></p>}
         <p className="muted center">Tidak perlu email atau verifikasi. Simpan username dan kata sandi Anda dengan aman.</p>
       </section>
       <p className="muted center">

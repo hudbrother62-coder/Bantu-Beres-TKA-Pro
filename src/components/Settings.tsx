@@ -61,6 +61,7 @@ export function SettingsPage({
           <p>Profil, koneksi AI, dan arah jawaban.</p>
         </div>
       </div>
+      <section className="panel"><h2>Keamanan akun</h2><p>Siapkan kode pemulihan darurat sekali pakai untuk berjaga-jaga jika lupa password. Kode hanya ditampilkan sekali dan tidak dikirim ke email buatan sistem.</p><a className="primary" href="/recovery.html?mode=setup" style={{display:"inline-block",padding:"10px 16px",textDecoration:"none"}}>Buat kode pemulihan</a></section>
       <div className="settings-grid">
         <section className="panel">
           <h2>Profil akun</h2>
